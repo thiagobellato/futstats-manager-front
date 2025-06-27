@@ -1,0 +1,104 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(to bottom right, #1f2937, #4b5563);
+  color: #f3f4f6;
+}
+
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: start;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.form-card {
+  background-color: #111827;
+  border-radius: 16px;
+  padding: 30px;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.icon {
+  font-size: 40px;
+  color: #facc15;
+}
+
+.header h1 {
+  margin: 10px 0 5px;
+  font-size: 28px;
+}
+
+.header p {
+  font-size: 14px;
+  color: #d1d5db;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+input {
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+button {
+  background-color: #2563eb;
+  color: white;
+  padding: 12px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.mensagem {
+  margin-top: 20px;
+  padding: 10px;
+  text-align: center;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.sucesso {
+  background-color: #16a34a;
+  color: white;
+}
+
+.erro {
+  background-color: #dc2626;
+  color: white;
+}
+
+.lista-clubes {
+  list-style: none;
+  padding: 0;
+  margin-top: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.clube-card {
+  background-color: #1f2937;
+  padding: 15px;
+  border-radius: 12px;
+  border-left: 5px solid #facc15;
+}
