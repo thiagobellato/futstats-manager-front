@@ -1,104 +1,304 @@
-body {
+/* Reset básico */
+* {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: linear-gradient(to bottom right, #1f2937, #4b5563);
-  color: #f3f4f6;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.app-container {
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(to right, #1e3a8a, #3b82f6);
+  color: #f9fafb;
   min-height: 100vh;
+}
+
+/* Container principal */
+.app-container {
   display: flex;
-  align-items: start;
-  justify-content: center;
-  padding: 40px 20px;
+  height: 100vh;
 }
 
-.form-card {
-  background-color: #111827;
-  border-radius: 16px;
-  padding: 30px;
-  width: 100%;
-  max-width: 600px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.icon {
-  font-size: 40px;
+/* Menu lateral simples */
+.menu-lateral, .menu {
+  width: 240px;
+  background-color: #1f2937;
+  padding: 20px;
+  border-radius: 12px;
+  margin-right: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   color: #facc15;
 }
 
-.header h1 {
-  margin: 10px 0 5px;
-  font-size: 28px;
+/* Título do menu */
+.menu-titulo {
+  font-size: 20px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #facc15;
+  padding-bottom: 5px;
+  color: #facc15;
 }
 
-.header p {
-  font-size: 14px;
-  color: #d1d5db;
-}
-
-.form {
+/* Lista do menu */
+.menu-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 10px;
 }
 
-input {
+/* Itens do menu */
+.menu-item a {
+  display: block;
+  background-color: #374151;
+  color: #f3f4f6;
+  text-decoration: none;
   padding: 12px;
-  border: none;
   border-radius: 8px;
-  font-size: 16px;
+  font-weight: 500;
+  text-align: center;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
-button {
+.menu-item a:hover {
   background-color: #2563eb;
+  transform: scale(1.02);
+}
+
+.menu-item.ativo a {
+  background-color: #2563eb;
+  font-weight: bold;
   color: white;
-  padding: 12px;
-  font-size: 16px;
+}
+
+/* Área do conteúdo ao lado do menu */
+.aba-conteudo {
+  flex-grow: 1;
+  padding: 40px;
+  overflow-y: auto;
+  margin-left: 240px;
+  width: 100%;
+}
+
+/* Card padrão para formulário ou conteúdo */
+.form-card {
+  background-color: #1e293b;
+  padding: 30px;
+  border-radius: 20px;
+  max-width: 700px;
+  margin: auto;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Campos de formulário */
+.form-card input,
+.form-card select,
+.form-card textarea {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+/* Botões dentro dos cards */
+.form-card button {
+  margin-top: 20px;
+  padding: 14px;
+  background-color: #16a34a;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
   cursor: pointer;
+  font-size: 16px;
 }
 
-button:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
+.form-card button:hover {
+  background-color: #15803d;
 }
 
+/* Mensagens de sucesso e erro */
 .mensagem {
   margin-top: 20px;
-  padding: 10px;
+  padding: 12px;
   text-align: center;
   border-radius: 8px;
   font-weight: bold;
 }
 
 .sucesso {
-  background-color: #16a34a;
+  background-color: #10b981;
   color: white;
 }
 
 .erro {
-  background-color: #dc2626;
+  background-color: #ef4444;
   color: white;
 }
 
+/* Listas de clubes e atletas */
 .lista-clubes {
   list-style: none;
   padding: 0;
   margin-top: 20px;
-  display: grid;
-  gap: 16px;
 }
 
-.clube-card {
-  background-color: #1f2937;
-  padding: 15px;
-  border-radius: 12px;
-  border-left: 5px solid #facc15;
+.item-clube {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #111827;
+  padding: 12px 20px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
+
+/* Botões de ação dentro da lista */
+.acoes button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  margin-left: 10px;
+  color: #facc15;
+}
+
+.acoes button:hover {
+  color: #f87171;
+}
+
+/* Animação para itens com alerta (cadastro incompleto) */
+@keyframes piscarAlerta {
+  0%, 100% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: #fff3cd; /* amarelo claro suave */
+  }
+}
+
+.piscar-alerta {
+  animation: piscarAlerta 1.5s infinite;
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  transition: background-color 0.3s ease-in-out;
+}
+
+/* Botão voltar estilo circular (usado em formulários) */
+.botao-voltar-circular {
+  display: inline-block;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: #2563eb;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  line-height: 42px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  margin-bottom: 20px;
+}
+
+.botao-voltar-circular:hover {
+  background-color: #1d4ed8;
+  transform: scale(1.05);
+}
+
+/* Container para o botão voltar simples */
+.voltar-container {
+  margin-top: 20px;
+  padding: 0 5px;
+}
+
+/* Botão voltar simples (retornar ao menu) */
+.botao-voltar {
+  background-color: #374151;
+  color: #f3f4f6;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.botao-voltar:hover {
+  background-color: #2563eb;
+  transform: scale(1.02);
+  color: white;
+}
+
+/* --- Classes específicas do Menu Inicial que você está usando --- */
+
+.menu-inicial-container {
+  text-align: center;
+  padding: 60px 20px;
+  background-color: #1e293b;
+  color: #f8fafc;
+  border-radius: 16px;
+  max-width: 600px;
+  margin: 40px auto;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.menu-titulo {
+  font-size: 36px;
+  margin-bottom: 10px;
+  color: #38bdf8; /* azul claro */
+}
+
+.menu-subtitulo {
+  font-size: 16px;
+  margin-bottom: 40px;
+  color: #cbd5e1;
+}
+
+.botoes-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.botao-menu-inicial {
+  background-color: #2563eb;
+  color: white;
+  padding: 16px 24px;
+  border-radius: 12px;
+  font-size: 18px;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.botao-menu-inicial:hover {
+  background-color: #1d4ed8;
+  transform: scale(1.03);
+}
+
+.item-estatistica {
+  background: #1e293b;
+  border-left: 4px solid #38bdf8;
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.item-estatistica strong {
+  color: #facc15;
+}
+
+

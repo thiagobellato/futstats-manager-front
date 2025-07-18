@@ -1,0 +1,139 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #0f172a; /* Azul escuro fixo */
+  color: #f3f4f6;
+  min-height: 100vh;
+}
+
+.tanque-manager-container {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.select-jogador,
+.jogador-editor {
+  margin-bottom: 1rem;
+}
+
+.select-jogador select,
+.input-nome {
+  padding: 0.5rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: none;
+  background-color: #374151;
+  color: #fff;
+  width: 200px;
+}
+
+.input-nome {
+  margin-top: 0.5rem;
+}
+
+.tanques-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  justify-items: center;
+}
+
+.tanque-card {
+  width: 100%;
+  max-width: 260px;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transition: all 0.3s ease;
+}
+
+.tanque-card .titulo-tanque {
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 0.4rem;
+}
+
+.vidas-info {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.botoes-contador {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.botoes-contador button {
+  width: 2.2rem;
+  height: 2.2rem;
+  font-size: 1.3rem;
+  background-color: #111827;
+  color: white;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.botoes-contador button:hover {
+  background-color: #374151;
+}
+
+.territorio-select {
+  padding: 0.5rem;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  border: none;
+  width: 100%;
+  font-weight: bold;
+}
+
+/* Cores de fundo por vidas */
+.tanque-card {
+  background-color: #22c55e;
+}
+
+.tanque-card[data-vidas='0'] {
+  background-color: #1f1f1f;
+  color: #ff4d4d;
+  border: 2px dashed red;
+}
+
+.tanque-card[data-vidas='1'],
+.tanque-card[data-vidas='2'],
+.tanque-card[data-vidas='3'] {
+  background-color: #dc2626;
+}
+
+.tanque-card[data-vidas='4'],
+.tanque-card[data-vidas='5'] {
+  background-color: #facc15;
+}
+
+.tanque-card[data-vidas='6'],
+.tanque-card[data-vidas='7'],
+.tanque-card[data-vidas='8'],
+.tanque-card[data-vidas='9'],
+.tanque-card[data-vidas='10'] {
+  background-color: #22c55e;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .tanques-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .select-jogador select,
+  .input-nome {
+    width: 100%;
+  }
+}
