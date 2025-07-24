@@ -8,7 +8,8 @@ export default function GerenciarAtleta() {
   const [mensagem, setMensagem] = useState('');
   const [erro, setErro] = useState(false);
 
-  const [estatisticasVisiveis, setEstatisticasVisiveis] = useState({});
+  // Estado que controla qual estatística está aberta (atletaId ou null)
+  const [estatisticaAberta, setEstatisticaAberta] = useState(null);
   const [dadosEstatistica, setDadosEstatistica] = useState({});
 
   const [ordenarAsc, setOrdenarAsc] = useState(true);
@@ -73,24 +74,76 @@ export default function GerenciarAtleta() {
     return !atleta.posicao || !atleta.clubeNome || atleta.clubeNome === "Sem Clube";
   };
 
-  const handleAbrirEstatisticas = (atletaId) => {
-    setEstatisticasVisiveis((prev) => ({ ...prev, [atletaId]: !prev[atletaId] }));
-    if (!dadosEstatistica[atletaId]) {
-      setDadosEstatistica((prev) => ({ ...prev, [atletaId]: { gols: 0, assistencias: 0 } }));
+  // Abre ou fecha a estatística; fecha outras se abrir outra
+  const handleToggleEstatisticas = (atleta) => {
+    const atletaId = atleta.atletaId;
+    const clubeId = atleta.clube?.clubeId ?? atleta.clubeId;
+
+    if (estatisticaAberta === atletaId) {
+      // Se já está aberto, fecha
+      setEstatisticaAberta(null);
+      return;
     }
+
+    // Caso contrário, tenta abrir a estatística
+    axios
+      .get(`http://localhost:8080/api/estatistica/${atletaId}/${clubeId}`)
+      .then((res) => {
+        const estat = res.data;
+        if (!estat) {
+          setMensagem('Nenhuma estatística encontrada para esse atleta.');
+          setErro(false);
+          setEstatisticaAberta(null);
+          return;
+        }
+
+        setDadosEstatistica((prevDados) => ({
+          ...prevDados,
+          [atletaId]: {
+            gols: estat.gols ?? 0,
+            assistencias: estat.assistencias ?? 0,
+          },
+        }));
+
+        setMensagem('Estatísticas carregadas com sucesso.');
+        setErro(false);
+        setEstatisticaAberta(atletaId);
+      })
+      .catch((err) => {
+        if (err.response?.status === 404 || err.response?.data === '') {
+          setMensagem('Nenhuma estatística encontrada para esse atleta.');
+          setErro(false);
+          setEstatisticaAberta(null);
+        } else {
+          const msgErro = err.response?.data?.message || err.message || 'Erro desconhecido';
+          setMensagem(`Erro ao carregar estatísticas do atleta: ${msgErro}`);
+          setErro(true);
+          console.error('Erro ao buscar estatísticas:', err);
+          setEstatisticaAberta(null);
+        }
+      });
   };
 
-  const handleAlterarValor = (atletaId, campo, valor) => {
+  const handleIncrementarEstatistica = (atleta, campo, delta) => {
+    const atletaId = atleta.atletaId;
+    const valorAtual = dadosEstatistica[atletaId]?.[campo] ?? 0;
+    const novoValor = Math.max(0, valorAtual + delta);
+
     setDadosEstatistica((prev) => ({
       ...prev,
       [atletaId]: {
         ...prev[atletaId],
-        [campo]: valor
-      }
+        [campo]: novoValor,
+      },
     }));
+
+    salvarEstatisticasComValores(atleta, {
+      ...dadosEstatistica[atletaId],
+      [campo]: novoValor,
+    });
   };
 
-  const salvarEstatisticas = async (atleta) => {
+  const salvarEstatisticasComValores = async (atleta, valores) => {
     const atletaId = atleta.atletaId;
     const clubeId = atleta.clube?.clubeId ?? atleta.clubeId;
 
@@ -100,46 +153,29 @@ export default function GerenciarAtleta() {
       return;
     }
 
+    const dadosParaEnviar = {
+      atletaId: atletaId,
+      clubeId: clubeId,
+      gols: valores?.gols ?? 0,
+      assistencias: valores?.assistencias ?? 0,
+    };
+
     try {
-      // 1. Buscar estatística existente pelo atletaId e clubeId
-      const resposta = await axios.get('http://localhost:8080/api/estatistica', {
-        params: {
-          atletaId: atletaId,
-          clubeId: clubeId
+      await axios.put(
+        'http://localhost:8080/api/estatistica/atualizar',
+        dadosParaEnviar,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
         }
-      });
-
-      const estatisticas = resposta.data;
-
-      if (!estatisticas || estatisticas.length === 0) {
-        setMensagem('Nenhuma estatística encontrada para este atleta e clube.');
-        setErro(true);
-        return;
-      }
-
-      // Pega o ID da primeira estatística retornada
-      const estatisticaId = estatisticas[0].id || estatisticas[0].estatisticaId;
-
-      if (!estatisticaId) {
-        setMensagem('ID da estatística não encontrado.');
-        setErro(true);
-        return;
-      }
-
-      // 2. Atualizar estatística via PATCH
-      await axios.patch(`http://localhost:8080/api/estatistica/atualizar/${estatisticaId}`, {
-        atleta_id: atletaId,
-        clube_id: clubeId,
-        gols: dadosEstatistica[atletaId]?.gols ?? 0,
-        assistencias: dadosEstatistica[atletaId]?.assistencias ?? 0,
-        dataInicio: new Date().toISOString().slice(0, 10),
-        dataFim: null
-      });
+      );
 
       setMensagem('Estatísticas atualizadas com sucesso.');
       setErro(false);
     } catch (err) {
-      setMensagem('Erro ao atualizar estatísticas.');
+      const msgErroBackend = err.response?.data?.message || err.message || 'Erro desconhecido';
+      setMensagem(`Erro ao atualizar estatísticas: ${msgErroBackend}`);
       setErro(true);
       console.error('Erro ao atualizar estatísticas:', err);
     }
@@ -151,7 +187,7 @@ export default function GerenciarAtleta() {
   let atletasFiltrados = atletas.filter((a) => {
     const buscaNome = filtroNome
       ? (a.nome ?? '').toLowerCase().startsWith(filtroNome.toLowerCase()) ||
-        (a.sobrenome ?? '').toLowerCase().startsWith(filtroNome.toLowerCase())
+      (a.sobrenome ?? '').toLowerCase().startsWith(filtroNome.toLowerCase())
       : true;
 
     const buscaNacionalidade = filtroNacionalidade ? a.nacionalidade === filtroNacionalidade : true;
@@ -292,37 +328,75 @@ export default function GerenciarAtleta() {
                   ✏️
                 </button>
                 <button title="Deletar" onClick={() => deletarAtleta(a)}>🗑️</button>
-                <button title="Estatísticas" onClick={() => handleAbrirEstatisticas(a.atletaId)}>
+                <button title="Estatísticas" onClick={() => handleToggleEstatisticas(a)}>
                   📊
                 </button>
               </div>
 
-              {estatisticasVisiveis[a.atletaId] && (
-                <div className="estatisticas-panel">
-                  <label>
-                    Gols:
-                    <input
-                      type="number"
-                      min={0}
-                      value={dadosEstatistica[a.atletaId]?.gols ?? 0}
-                      onChange={(e) =>
-                        handleAlterarValor(a.atletaId, 'gols', parseInt(e.target.value))
-                      }
-                    />
-                  </label>
-                  <label>
-                    Assistências:
-                    <input
-                      type="number"
-                      min={0}
-                      value={dadosEstatistica[a.atletaId]?.assistencias ?? 0}
-                      onChange={(e) =>
-                        handleAlterarValor(a.atletaId, 'assistencias', parseInt(e.target.value))
-                      }
-                    />
-                  </label>
-                  <div style={{ marginTop: '0.5rem' }}>
-                    <button onClick={() => salvarEstatisticas(a)}>💾 Salvar</button>
+              {estatisticaAberta === a.atletaId && (
+                <div className="estatisticas-panel" style={{ marginTop: '0.5rem' }}>
+                  {/* Gols */}
+                  <div className="estatistica-linha">
+                    <button
+                      type="button"
+                      onClick={() => handleIncrementarEstatistica(a, 'gols', -1)}
+                      disabled={(dadosEstatistica[a.atletaId]?.gols ?? 0) <= 0}
+                      title="Diminuir gols"
+                      className="botao-estatistica"
+                    >
+                      −
+                    </button>
+
+                    {/* CAMPO VISUAL SEM INPUT, só um span */}
+                    <span
+                      className="campo-estatistica"
+                      title={`${dadosEstatistica[a.atletaId]?.gols ?? 0} gols`}
+                      aria-label="Quantidade de gols"
+                    >
+                      {dadosEstatistica[a.atletaId]?.gols ?? 0}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => handleIncrementarEstatistica(a, 'gols', 1)}
+                      title="Aumentar gols"
+                      className="botao-estatistica"
+                    >
+                      +
+                    </button>
+                    <span className="label-estatistica">Gols</span>
+                  </div>
+
+                  {/* Assistências */}
+                  <div className="estatistica-linha">
+                    <button
+                      type="button"
+                      onClick={() => handleIncrementarEstatistica(a, 'assistencias', -1)}
+                      disabled={(dadosEstatistica[a.atletaId]?.assistencias ?? 0) <= 0}
+                      title="Diminuir assistências"
+                      className="botao-estatistica"
+                    >
+                      −
+                    </button>
+
+                    {/* CAMPO VISUAL SEM INPUT */}
+                    <span
+                      className="campo-estatistica"
+                      title={`${dadosEstatistica[a.atletaId]?.assistencias ?? 0} assistências`}
+                      aria-label="Quantidade de assistências"
+                    >
+                      {dadosEstatistica[a.atletaId]?.assistencias ?? 0}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => handleIncrementarEstatistica(a, 'assistencias', 1)}
+                      title="Aumentar assistências"
+                      className="botao-estatistica"
+                    >
+                      +
+                    </button>
+                    <span className="label-estatistica">Assistências</span>
                   </div>
                 </div>
               )}

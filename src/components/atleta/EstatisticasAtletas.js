@@ -28,31 +28,41 @@ export default function EstatisticasAtletas() {
   const estatisticasPorAtleta = estatisticas.reduce((acc, stat) => {
     const nome = stat.nomeAtleta;
     if (!acc[nome]) {
-      acc[nome] = { nome: stat.nomeAtleta, gols: 0, assistencias: 0 };
+      acc[nome] = { nome: stat.nomeAtleta, gols: 0, assistencias: 0, clube: stat.nomeClube };
     }
     acc[nome].gols += stat.gols;
     acc[nome].assistencias += stat.assistencias;
     return acc;
   }, {});
 
-  const rankingGols = Object.values(estatisticasPorAtleta)
-    .sort((a, b) => b.gols - a.gols)
-    .slice(0, 3);
+  // Array para ordenar e exibir
+  const atletasArray = Object.values(estatisticasPorAtleta);
 
-  const rankingAssistencias = Object.values(estatisticasPorAtleta)
-    .sort((a, b) => b.assistencias - a.assistencias)
-    .slice(0, 3);
-
-  // Ordenação visual
-  const estatisticasOrdenadas = [...estatisticas].sort((a, b) => {
-    if (ordenarPor === 'nome') return a.nomeAtleta.localeCompare(b.nomeAtleta);
-    if (ordenarPor === 'gols') return b.gols - a.gols;
-    if (ordenarPor === 'assistencias') return b.assistencias - a.assistencias;
+  // Ordenação conforme filtro selecionado
+  const atletasOrdenados = atletasArray.sort((a, b) => {
+    if (ordenarPor === 'nome') {
+      return a.nome.localeCompare(b.nome);
+    } else if (ordenarPor === 'gols') {
+      return b.gols - a.gols;
+    } else if (ordenarPor === 'assistencias') {
+      return b.assistencias - a.assistencias;
+    }
     return 0;
   });
 
+  // Ranking top 3 goleadores e assistentes (uso slice para não alterar o original)
+  const rankingGols = atletasArray
+    .slice()
+    .sort((a, b) => b.gols - a.gols)
+    .slice(0, 3);
+
+  const rankingAssistencias = atletasArray
+    .slice()
+    .sort((a, b) => b.assistencias - a.assistencias)
+    .slice(0, 3);
+
   return (
-    <div className="form-card">
+    <div className="form-card estatisticas-atletas-container">
       <div
         className="botao-voltar-circular"
         onClick={() => navigate('/menu-atleta')}
@@ -68,7 +78,7 @@ export default function EstatisticasAtletas() {
       )}
 
       {/* Filtros de ordenação */}
-      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem' }}>
+      <div className="filtros-estatisticas">
         <label>
           Ordenar por:&nbsp;
           <select value={ordenarPor} onChange={(e) => setOrdenarPor(e.target.value)}>
@@ -79,14 +89,15 @@ export default function EstatisticasAtletas() {
         </label>
       </div>
 
-      {/* Lista de estatísticas */}
-      <ul className="lista-clubes">
-        {estatisticasOrdenadas.length > 0 ? (
-          estatisticasOrdenadas.map((e, index) => (
-            <li key={index} className="item-clube">
-              <strong>{e.nomeAtleta}</strong> — Clube: <strong>{e.nomeClube}</strong> |{' '}
-              Gols: <strong>{e.gols}</strong> |{' '}
-              Assistências: <strong>{e.assistencias}</strong>
+      {/* Lista de estatísticas com espaçamento horizontal */}
+      <ul className="lista-estatisticas">
+        {atletasOrdenados.length > 0 ? (
+          atletasOrdenados.map((e, index) => (
+            <li key={index} className="item-estatistica">
+              <span><strong>Nome:</strong> {e.nome}</span>
+              <span><strong>Clube:</strong> {e.clube}</span>
+              <span><strong>Gols:</strong> {e.gols}</span>
+              <span><strong>Assistências:</strong> {e.assistencias}</span>
             </li>
           ))
         ) : (
@@ -94,25 +105,25 @@ export default function EstatisticasAtletas() {
         )}
       </ul>
 
-      {/* Ranking lateral */}
-      <div style={{ marginTop: '2rem', display: 'flex', gap: '3rem', flexWrap: 'wrap' }}>
-        <div>
+      {/* Ranking organizado horizontalmente */}
+      <div className="ranking-container">
+        <div className="ranking-box">
           <h3>🏆 Top 3 Goleadores</h3>
           <ol>
             {rankingGols.map((a, i) => (
               <li key={i}>
-                <strong>{a.nome}</strong> — {a.gols} gols
+                <strong>{a.nome}</strong> — {a.gols} gol{a.gols !== 1 ? 's' : ''}
               </li>
             ))}
           </ol>
         </div>
 
-        <div>
+        <div className="ranking-box">
           <h3>🎯 Top 3 Assistentes</h3>
           <ol>
             {rankingAssistencias.map((a, i) => (
               <li key={i}>
-                <strong>{a.nome}</strong> — {a.assistencias} assistências
+                <strong>{a.nome}</strong> — {a.assistencias} assistência{a.assistencias !== 1 ? 's' : ''}
               </li>
             ))}
           </ol>

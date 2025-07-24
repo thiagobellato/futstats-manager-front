@@ -3,28 +3,41 @@ import axios from 'axios';
 
 export default function EstatisticasAtletaCard({ atletaId, onClose }) {
   const [estatistica, setEstatistica] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     axios.get(`/api/estatisticas/atleta/${atletaId}`)
-      .then(response => setEstatistica(response.data))
-      .catch(err => console.error(err));
+      .then(response => {
+        setEstatistica(response.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
   }, [atletaId]);
 
-  const handleChange = (campo, valor) => {
-    setEstatistica(prev => ({ ...prev, [campo]: valor }));
+  const atualizarCampo = (campo, novoValor) => {
+    const novaEstatistica = { ...estatistica, [campo]: novoValor };
+
+    setEstatistica(novaEstatistica);
+
+    // Atualiza no backend imediatamente
+    axios.put(`/api/estatisticas/${novaEstatistica.id}`, novaEstatistica)
+      .then(() => {
+        console.log(`Campo ${campo} atualizado para ${novoValor}`);
+      })
+      .catch(err => console.error(err));
   };
 
   const handleIncrement = (campo, delta) => {
-    setEstatistica(prev => ({ ...prev, [campo]: Math.max(0, prev[campo] + delta) }));
+    const valorAtual = estatistica[campo] || 0;
+    const novoValor = Math.max(0, valorAtual + delta);
+    atualizarCampo(campo, novoValor);
   };
 
-  const salvarEstatistica = () => {
-    axios.put(`/api/estatisticas/${estatistica.id}`, estatistica)
-      .then(() => alert('Estatística atualizada!'))
-      .catch(err => console.error(err));
-  };
-
-  if (!estatistica) return <div>Carregando...</div>;
+  if (loading) return <div>Carregando...</div>;
+  if (!estatistica) return <div>Estatística não encontrada</div>;
 
   return (
     <div className="card-estatisticas">
@@ -34,7 +47,7 @@ export default function EstatisticasAtletaCard({ atletaId, onClose }) {
         <input
           type="number"
           value={estatistica.gols}
-          onChange={e => handleChange('gols', parseInt(e.target.value))}
+          onChange={e => atualizarCampo('gols', parseInt(e.target.value) || 0)}
         />
         <button onClick={() => handleIncrement('gols', 1)}>+</button>
       </div>
@@ -44,11 +57,10 @@ export default function EstatisticasAtletaCard({ atletaId, onClose }) {
         <input
           type="number"
           value={estatistica.assistencias}
-          onChange={e => handleChange('assistencias', parseInt(e.target.value))}
+          onChange={e => atualizarCampo('assistencias', parseInt(e.target.value) || 0)}
         />
         <button onClick={() => handleIncrement('assistencias', 1)}>+</button>
       </div>
-      <button onClick={salvarEstatistica}>Salvar</button>
       <button onClick={onClose}>Fechar</button>
     </div>
   );

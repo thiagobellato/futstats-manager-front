@@ -300,5 +300,199 @@ body {
 .item-estatistica strong {
   color: #facc15;
 }
+.lista-estatisticas {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.item-estatistica {
+  background-color: #111827;
+  border: 1px solid #374151;
+  border-left: 6px solid #2563eb;
+  margin-bottom: 1rem;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  color: #f9fafb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.item-estatistica span {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.item-estatistica .nome-atleta {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #facc15;
+}
+
+.ranking-container h3 {
+  color: #38bdf8;
+  margin-bottom: 0.5rem;
+}
+
+/* Container do card das estatísticas */
+.estatisticas-atletas-container {
+  padding: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Lista de estatísticas */
+.lista-estatisticas {
+  list-style: none;
+  padding: 0;
+  margin-top: 20px;
+}
+
+/* Cada item da lista */
+.item-estatistica {
+  background-color: #111827;
+  border: 1px solid #374151;
+  border-left: 6px solid #2563eb;
+  margin-bottom: 1rem;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  color: #f9fafb;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: center;
+  font-size: 1rem;
+}
+
+/* Espaçamento e destaque dos labels */
+.item-estatistica span {
+  white-space: nowrap;
+}
+
+.item-estatistica span strong {
+  color: #facc15;
+}
+
+/* Container do ranking - exibe lado a lado */
+.ranking-container {
+  margin-top: 2.5rem;
+  display: flex;
+  gap: 3rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Caixas individuais do ranking */
+.ranking-box {
+  background-color: #1e293b;
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  width: 300px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+  color: #e2e8f0;
+}
+
+/* Títulos do ranking */
+.ranking-box h3 {
+  color: #38bdf8;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* Lista ordenada dentro do ranking */
+.ranking-box ol {
+  padding-left: 1.2rem;
+}
+
+/* Itens do ranking */
+.ranking-box ol li {
+  margin-bottom: 0.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f9fafb;
+}
+
+/* Negrito nos nomes */
+.ranking-box ol li strong {
+  color: #facc15;
+}
+
+/* Campo visual para estatísticas, mais largo e centralizado, sem setinhas */
+.campo-estatistica {
+  display: inline-block;
+  width: 60px; /* maior que o input anterior */
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: #facc15;
+  user-select: none;
+  background-color: #111827;
+  border-radius: 8px;
+  padding: 6px 0;
+  box-shadow: inset 0 0 6px rgba(250, 204, 21, 0.5);
+}
+
+.estatistica-linha {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* um pouquinho mais espaço */
+  margin-bottom: 0.6rem;
+}
+
+/* Atualização só nos botões estatistica para ficarem redondos e centralizados */
+/* Botões de estatísticas bonitos, circulares e alinhados */
+.botao-estatistica {
+  width: 36px;
+  height: 36px;
+  font-size: 24px;
+  font-weight: bold;
+  background-color: #e715fa;
+  color: #201127;
+  border: none;
+  border-radius: 50%; /* circular */
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+  user-select: none;
+  box-shadow: 0 2px 6px rgba(250, 204, 21, 0.6);
+
+  position: relative;
+  top: -10px; /* sobe o botão 4 pixels para alinhar com o número */
+}
+
+.botao-estatistica:hover:not(:disabled) {
+  background-color: #5437d4;
+}
+
+.botao-estatistica:disabled {
+  background-color: #aaa;
+  cursor: not-allowed;
+}
 
 
+
+.campo-estatistica {
+  display: inline-block;
+  width: 70px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+  color: #15ebfa;
+  user-select: none;
+  background-color: #111827;
+  border-radius: 8px;
+  padding: 8px 0;
+  box-shadow: inset 0 0 8px rgba(250, 204, 21, 0.6);
+}
+
+/* Label da estatística */
+.label-estatistica {
+  font-weight: 700;
+  color: #15ebfa;
+  margin-left: 8px;
+  user-select: none;
+}
