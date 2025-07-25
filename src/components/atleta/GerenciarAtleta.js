@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import TransferirAtletaModal from './TransferirAtletaModal'; // NOVO
 
 export default function GerenciarAtleta() {
   const [atletas, setAtletas] = useState([]);
@@ -8,7 +9,6 @@ export default function GerenciarAtleta() {
   const [mensagem, setMensagem] = useState('');
   const [erro, setErro] = useState(false);
 
-  // Estado que controla qual estatística está aberta (atletaId ou null)
   const [estatisticaAberta, setEstatisticaAberta] = useState(null);
   const [dadosEstatistica, setDadosEstatistica] = useState({});
 
@@ -20,6 +20,9 @@ export default function GerenciarAtleta() {
   const [filtroNacionalidade, setFiltroNacionalidade] = useState('');
   const [filtroPosicao, setFiltroPosicao] = useState('');
   const [filtroClube, setFiltroClube] = useState('');
+
+  const [atletaParaTransferir, setAtletaParaTransferir] = useState(null); // NOVO
+  const [mostrarModalTransferencia, setMostrarModalTransferencia] = useState(false); // NOVO
 
   const navigate = useNavigate();
 
@@ -74,18 +77,15 @@ export default function GerenciarAtleta() {
     return !atleta.posicao || !atleta.clubeNome || atleta.clubeNome === "Sem Clube";
   };
 
-  // Abre ou fecha a estatística; fecha outras se abrir outra
   const handleToggleEstatisticas = (atleta) => {
     const atletaId = atleta.atletaId;
     const clubeId = atleta.clube?.clubeId ?? atleta.clubeId;
 
     if (estatisticaAberta === atletaId) {
-      // Se já está aberto, fecha
       setEstatisticaAberta(null);
       return;
     }
 
-    // Caso contrário, tenta abrir a estatística
     axios
       .get(`http://localhost:8080/api/estatistica/${atletaId}/${clubeId}`)
       .then((res) => {
@@ -181,13 +181,18 @@ export default function GerenciarAtleta() {
     }
   };
 
+  const abrirModalTransferencia = (atleta) => {
+    setAtletaParaTransferir(atleta);
+    setMostrarModalTransferencia(true);
+  };
+
   const nacionalidadesUnicas = [...new Set(atletas.map(a => a.nacionalidade))];
   const clubesUnicos = [...new Set(atletas.map(a => a.clubeNome))];
 
   let atletasFiltrados = atletas.filter((a) => {
     const buscaNome = filtroNome
       ? (a.nome ?? '').toLowerCase().startsWith(filtroNome.toLowerCase()) ||
-      (a.sobrenome ?? '').toLowerCase().startsWith(filtroNome.toLowerCase())
+        (a.sobrenome ?? '').toLowerCase().startsWith(filtroNome.toLowerCase())
       : true;
 
     const buscaNacionalidade = filtroNacionalidade ? a.nacionalidade === filtroNacionalidade : true;
@@ -324,18 +329,14 @@ export default function GerenciarAtleta() {
                 )}
               </span>
               <div className="acoes">
-                <button title="Editar" onClick={() => irParaEditar(a.atletaId)}>
-                  ✏️
-                </button>
+                <button title="Editar" onClick={() => irParaEditar(a.atletaId)}>✏️</button>
                 <button title="Deletar" onClick={() => deletarAtleta(a)}>🗑️</button>
-                <button title="Estatísticas" onClick={() => handleToggleEstatisticas(a)}>
-                  📊
-                </button>
+                <button title="Estatísticas" onClick={() => handleToggleEstatisticas(a)}>📊</button>
+                <button title="Transferir" onClick={() => abrirModalTransferencia(a)}>🔁</button> {/* NOVO */}
               </div>
 
               {estatisticaAberta === a.atletaId && (
                 <div className="estatisticas-panel" style={{ marginTop: '0.5rem' }}>
-                  {/* Gols */}
                   <div className="estatistica-linha">
                     <button
                       type="button"
@@ -346,16 +347,9 @@ export default function GerenciarAtleta() {
                     >
                       −
                     </button>
-
-                    {/* CAMPO VISUAL SEM INPUT, só um span */}
-                    <span
-                      className="campo-estatistica"
-                      title={`${dadosEstatistica[a.atletaId]?.gols ?? 0} gols`}
-                      aria-label="Quantidade de gols"
-                    >
+                    <span className="campo-estatistica">
                       {dadosEstatistica[a.atletaId]?.gols ?? 0}
                     </span>
-
                     <button
                       type="button"
                       onClick={() => handleIncrementarEstatistica(a, 'gols', 1)}
@@ -367,7 +361,6 @@ export default function GerenciarAtleta() {
                     <span className="label-estatistica">Gols</span>
                   </div>
 
-                  {/* Assistências */}
                   <div className="estatistica-linha">
                     <button
                       type="button"
@@ -378,16 +371,9 @@ export default function GerenciarAtleta() {
                     >
                       −
                     </button>
-
-                    {/* CAMPO VISUAL SEM INPUT */}
-                    <span
-                      className="campo-estatistica"
-                      title={`${dadosEstatistica[a.atletaId]?.assistencias ?? 0} assistências`}
-                      aria-label="Quantidade de assistências"
-                    >
+                    <span className="campo-estatistica">
                       {dadosEstatistica[a.atletaId]?.assistencias ?? 0}
                     </span>
-
                     <button
                       type="button"
                       onClick={() => handleIncrementarEstatistica(a, 'assistencias', 1)}
@@ -406,6 +392,21 @@ export default function GerenciarAtleta() {
           <li>Nenhum atleta encontrado com esses filtros.</li>
         )}
       </ul>
+
+      {/* MODAL DE TRANSFERÊNCIA */}
+     {mostrarModalTransferencia && atletaParaTransferir && (
+  <TransferirAtletaModal
+    atleta={atletaParaTransferir}
+    onClose={() => setMostrarModalTransferencia(false)}
+    onTransferenciaFeita={(mensagemRetornada, erroStatus) => {
+      setMensagem(mensagemRetornada);
+      setErro(erroStatus);
+      buscarAtletas();
+      setMostrarModalTransferencia(false);
+    }}
+  />
+)}
+
     </div>
   );
 }

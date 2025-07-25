@@ -4,41 +4,68 @@ import { useNavigate } from 'react-router-dom';
 
 export default function EstatisticasAtletas() {
   const [estatisticas, setEstatisticas] = useState([]);
+  const [atletas, setAtletas] = useState([]);
   const [mensagem, setMensagem] = useState('');
   const [erro, setErro] = useState(false);
   const [ordenarPor, setOrdenarPor] = useState('nome');
+  const [expandedAtleta, setExpandedAtleta] = useState(null);
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    buscarEstatisticas();
+    buscarDados();
   }, []);
 
-  const buscarEstatisticas = async () => {
+  const buscarDados = async () => {
     try {
-      const resposta = await axios.get('http://localhost:8080/api/estatistica');
-      setEstatisticas(resposta.data);
+      const [resEstatisticas, resAtletas] = await Promise.all([
+        axios.get('http://localhost:8080/api/estatistica'),
+        axios.get('http://localhost:8080/api/atleta'),
+      ]);
+      setEstatisticas(resEstatisticas.data);
+      setAtletas(resAtletas.data);
     } catch (err) {
-      setMensagem('Erro ao buscar estatísticas.');
+      setMensagem('Erro ao buscar dados.');
       setErro(true);
     }
   };
 
-  // Agrupar estatísticas por nome do atleta (somar gols/assistências)
-  const estatisticasPorAtleta = estatisticas.reduce((acc, stat) => {
-    const nome = stat.nomeAtleta;
-    if (!acc[nome]) {
-      acc[nome] = { nome: stat.nomeAtleta, gols: 0, assistencias: 0, clube: stat.nomeClube };
-    }
-    acc[nome].gols += stat.gols;
-    acc[nome].assistencias += stat.assistencias;
+  // Mapa para clube atual por chave combinada atletaId + nomeAtleta
+  const clubeAtualPorId = atletas.reduce((acc, atleta) => {
+    const chave = `${atleta.atletaId}-${atleta.nome}`; // <-- Aqui a correção para atletaId
+    acc[chave] = atleta.clubeNome || 'Sem clube atual'; // Mantendo o que você já tinha para o clube
     return acc;
   }, {});
 
-  // Array para ordenar e exibir
+  // Agrupa estatísticas por atletaId + nomeAtleta para evitar misturar atletas com nomes iguais
+  const estatisticasPorAtleta = estatisticas.reduce((acc, stat) => {
+    const chave = `${stat.atletaId}-${stat.nomeAtleta}`; // Usa atletaId do backend
+
+    if (!acc[chave]) {
+      acc[chave] = {
+        id: stat.atletaId,
+        nome: stat.nomeAtleta,
+        gols: 0,
+        assistencias: 0,
+        clube: clubeAtualPorId[chave] || stat.nomeClube || 'Sem clube',
+        historico: [],
+      };
+    }
+
+    acc[chave].gols += stat.gols || 0;
+    acc[chave].assistencias += stat.assistencias || 0;
+
+    acc[chave].historico.push({
+      clube: stat.nomeClube,
+      gols: stat.gols || 0,
+      assistencias: stat.assistencias || 0,
+    });
+
+    return acc;
+  }, {});
+
   const atletasArray = Object.values(estatisticasPorAtleta);
 
-  // Ordenação conforme filtro selecionado
   const atletasOrdenados = atletasArray.sort((a, b) => {
     if (ordenarPor === 'nome') {
       return a.nome.localeCompare(b.nome);
@@ -50,7 +77,6 @@ export default function EstatisticasAtletas() {
     return 0;
   });
 
-  // Ranking top 3 goleadores e assistentes (uso slice para não alterar o original)
   const rankingGols = atletasArray
     .slice()
     .sort((a, b) => b.gols - a.gols)
@@ -60,6 +86,10 @@ export default function EstatisticasAtletas() {
     .slice()
     .sort((a, b) => b.assistencias - a.assistencias)
     .slice(0, 3);
+
+  const toggleExpandir = (chave) => {
+    setExpandedAtleta(expandedAtleta === chave ? null : chave);
+  };
 
   return (
     <div className="form-card estatisticas-atletas-container">
@@ -77,7 +107,6 @@ export default function EstatisticasAtletas() {
         <div className={`mensagem ${erro ? 'erro' : 'sucesso'}`}>{mensagem}</div>
       )}
 
-      {/* Filtros de ordenação */}
       <div className="filtros-estatisticas">
         <label>
           Ordenar por:&nbsp;
@@ -89,23 +118,42 @@ export default function EstatisticasAtletas() {
         </label>
       </div>
 
-      {/* Lista de estatísticas com espaçamento horizontal */}
       <ul className="lista-estatisticas">
         {atletasOrdenados.length > 0 ? (
-          atletasOrdenados.map((e, index) => (
-            <li key={index} className="item-estatistica">
-              <span><strong>Nome:</strong> {e.nome}</span>
-              <span><strong>Clube:</strong> {e.clube}</span>
-              <span><strong>Gols:</strong> {e.gols}</span>
-              <span><strong>Assistências:</strong> {e.assistencias}</span>
-            </li>
-          ))
+          atletasOrdenados.map((e) => {
+            const chave = `${e.id}-${e.nome}`;
+            return (
+              <li
+                key={chave}
+                className="item-estatistica"
+                onClick={() => toggleExpandir(chave)}
+                style={{ cursor: 'pointer' }}
+              >
+                <span><strong>Nome:</strong> {e.nome}</span>
+                <span><strong>Clube Atual:</strong> {e.clube}</span>
+                <span><strong>Gols:</strong> {e.gols}</span>
+                <span><strong>Assistências:</strong> {e.assistencias}</span>
+
+                {expandedAtleta === chave && (
+                  <div className="historico-clubes">
+                    <h4>📂 Histórico por clube:</h4>
+                    <ul>
+                      {e.historico.map((h, i) => (
+                        <li key={i}>
+                          <strong>{h.clube}</strong> — {h.gols} gol{h.gols !== 1 ? 's' : ''}, {h.assistencias} assistência{h.assistencias !== 1 ? 's' : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </li>
+            );
+          })
         ) : (
           <li>Nenhuma estatística encontrada.</li>
         )}
       </ul>
 
-      {/* Ranking organizado horizontalmente */}
       <div className="ranking-container">
         <div className="ranking-box">
           <h3>🏆 Top 3 Goleadores</h3>
