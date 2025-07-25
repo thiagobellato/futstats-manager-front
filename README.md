@@ -28,3 +28,4 @@ Este é o frontend da aplicação **futstats**, desenvolvido com **React**, que 
 ## 🔗 Integração
 
 Todo o frontend consome os dados da API REST fornecida pelo backend Spring Boot do projeto.
+
