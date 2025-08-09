@@ -2,10 +2,11 @@
 import axios from 'axios';
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { ArrowLeft } from 'react-feather';
+
 
 export default function EditarAtleta() {
   const [atleta, setAtleta] = useState(null);
-  const [clubes, setClubes] = useState([]);
   const [posicoes, setPosicoes] = useState([]);
   const [mensagem, setMensagem] = useState('');
   const [erro, setErro] = useState(false);
@@ -17,7 +18,6 @@ export default function EditarAtleta() {
 
   useEffect(() => {
     if (id) carregarDados(id);
-    carregarClubes();
     carregarPosicoes();
   }, [id]);
 
@@ -33,21 +33,12 @@ export default function EditarAtleta() {
         dataDeNascimento: data.dataDeNascimento?.substring(0, 10) || '',
         nacionalidade: data.nacionalidade || '',
         posicao: data.posicao || '',
-        clubeId: data.clubeId || '',
+        clube: data.clubeNome || 'Não informado',
       });
     } catch (err) {
       console.error('Erro ao carregar atleta:', err);
       setMensagem('Erro ao carregar atleta.');
       setErro(true);
-    }
-  };
-
-  const carregarClubes = async () => {
-    try {
-      const resposta = await axios.get('http://localhost:8080/api/clube');
-      setClubes(resposta.data);
-    } catch (err) {
-      console.error('Erro ao carregar clubes:', err);
     }
   };
 
@@ -70,7 +61,6 @@ export default function EditarAtleta() {
         dataDeNascimento: atleta.dataDeNascimento || null,
         nacionalidade: atleta.nacionalidade || null,
         posicao: atleta.posicao || null,
-        clubeId: atleta.clubeId || null,
       };
 
       await axios.put(`http://localhost:8080/api/atleta/atualizar/${id}`, payload);
@@ -86,81 +76,96 @@ export default function EditarAtleta() {
     }
   };
 
-  if (!atleta) return <div>Carregando atleta...</div>;
+  if (!atleta) {
+    return (
+      <div className="text-center mt-10 text-white">
+        Carregando atleta...
+      </div>
+    );
+  }
 
   return (
-    <div className="form-card">
-      {/* Setinha circular para voltar */}
-      <div
-        className="botao-voltar-circular"
-        title="Voltar para Gerenciar Atletas"
-        onClick={() => navigate('/menu-atleta/gerenciar')}
-        style={{ marginBottom: '20px', cursor: 'pointer' }}
-      >
-        ←
+    <div className="form-background">
+      <div className="form-container">
+        <button
+          onClick={() => navigate('/menu-atleta/gerenciar')}
+          className="mb-4 flex items-center text-[var(--primaryGreen)] hover:text-[var(--lightGreen)]"
+          title="Voltar"
+        >
+          <ArrowLeft className="mr-2" /> Voltar para Gerenciar Atletas
+        </button>
+
+        <h2 className="form-title">Editar Atleta</h2>
+
+        <form onSubmit={atualizar}>
+          <input
+            type="text"
+            placeholder="Nome"
+            value={atleta.nome}
+            onChange={(e) => setAtleta({ ...atleta, nome: e.target.value })}
+            className="form-input"
+          />
+
+          <input
+            type="text"
+            placeholder="Sobrenome"
+            value={atleta.sobrenome}
+            onChange={(e) => setAtleta({ ...atleta, sobrenome: e.target.value })}
+            className="form-input"
+          />
+
+          <input
+            type="date"
+            value={atleta.dataDeNascimento}
+            onChange={(e) => setAtleta({ ...atleta, dataDeNascimento: e.target.value })}
+            className="form-input"
+          />
+
+          <input
+            type="text"
+            placeholder="Nacionalidade"
+            value={atleta.nacionalidade}
+            onChange={(e) => setAtleta({ ...atleta, nacionalidade: e.target.value })}
+            className="form-input"
+          />
+
+          <select
+            value={atleta.posicao}
+            onChange={(e) => setAtleta({ ...atleta, posicao: e.target.value })}
+            className="form-input"
+          >
+            <option value="">-- Selecione a Posição --</option>
+            {posicoes.map((p) => (
+              <option key={p.sigla} value={p.sigla}>
+                [{p.sigla}] {p.descricao}
+              </option>
+            ))}
+          </select>
+
+          <div>
+            <label className="text-sm text-[var(--primaryPurple)] font-bold">
+              Clube Atual
+            </label>
+            <div className="form-input bg-gray-200 cursor-not-allowed text-gray-700 mt-1">
+              {atleta.clube}
+            </div>
+          </div>
+
+          <button type="submit" className="form-button mt-4">
+            Atualizar
+          </button>
+        </form>
+
+        {mensagem && (
+          <div
+            className={`mt-4 text-center font-medium p-2 rounded ${
+              erro ? 'bg-red-500 text-white' : 'bg-green-600 text-white'
+            }`}
+          >
+            {mensagem}
+          </div>
+        )}
       </div>
-
-      <h2>Editar Atleta</h2>
-      <form onSubmit={atualizar}>
-        <input
-          type="text"
-          placeholder="Nome"
-          value={atleta.nome}
-          onChange={(e) => setAtleta({ ...atleta, nome: e.target.value })}
-        />
-
-        <input
-          type="text"
-          placeholder="Sobrenome"
-          value={atleta.sobrenome}
-          onChange={(e) => setAtleta({ ...atleta, sobrenome: e.target.value })}
-        />
-
-        <input
-          type="date"
-          value={atleta.dataDeNascimento}
-          onChange={(e) => setAtleta({ ...atleta, dataDeNascimento: e.target.value })}
-        />
-
-        <input
-          type="text"
-          placeholder="Nacionalidade"
-          value={atleta.nacionalidade}
-          onChange={(e) => setAtleta({ ...atleta, nacionalidade: e.target.value })}
-        />
-
-        <select
-          value={atleta.posicao}
-          onChange={(e) => setAtleta({ ...atleta, posicao: e.target.value })}
-        >
-          <option value="">-- Selecione a Posição --</option>
-          {posicoes.map((p) => (
-            <option key={p.sigla} value={p.sigla}>
-              [{p.sigla}] {p.descricao}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={atleta.clubeId}
-          onChange={(e) => setAtleta({ ...atleta, clubeId: parseInt(e.target.value) })}
-        >
-          <option value="">-- Selecione o Clube --</option>
-          {clubes.map((c) => (
-            <option key={c.clubeId} value={c.clubeId}>
-              {c.nome}
-            </option>
-          ))}
-        </select>
-
-        <button type="submit">Atualizar</button>
-      </form>
-
-      {mensagem && (
-        <div className={`mensagem ${erro ? 'erro' : 'sucesso'}`}>
-          {mensagem}
-        </div>
-      )}
     </div>
   );
 }

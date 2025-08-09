@@ -1,115 +1,155 @@
-import axios from 'axios'
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import axios from 'axios';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FiArrowLeft } from 'react-icons/fi';
 
 export default function CadastroClubeEmLote() {
-  const [nome, setNome] = useState('')
-  const [sigla, setSigla] = useState('')
-  const [pais, setPais] = useState('')
-  const [mensagem, setMensagem] = useState('')
-  const [erro, setErro] = useState(false)
-  const [clubesParaCadastrar, setClubesParaCadastrar] = useState([])
+  const [nome, setNome] = useState('');
+  const [sigla, setSigla] = useState('');
+  const [pais, setPais] = useState('');
+  const [mensagem, setMensagem] = useState('');
+  const [erro, setErro] = useState(false);
+  const [clubesParaCadastrar, setClubesParaCadastrar] = useState([]);
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+
+  const limparTudo = () => {
+    setNome('');
+    setSigla('');
+    setPais('');
+    setMensagem('');
+    setErro(false);
+    setClubesParaCadastrar([]);
+  };
 
   const adicionarClubeNaLista = (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    if (!nome || !sigla || !pais) {
-      setMensagem('Preencha todos os campos antes de adicionar à lista.')
-      setErro(true)
-      return
+    if (!nome.trim() || !sigla.trim() || !pais.trim()) {
+      setMensagem('Preencha todos os campos antes de adicionar à lista.');
+      setErro(true);
+      return;
     }
 
     const novoClube = {
-      nome,
-      sigla,
-      pais
-    }
+      nome: nome.trim(),
+      sigla: sigla.trim(),
+      pais: pais.trim(),
+    };
 
-    setClubesParaCadastrar([...clubesParaCadastrar, novoClube])
-    setNome('')
-    setSigla('')
-    setPais('')
-    setMensagem('')
-    setErro(false)
-  }
+    setClubesParaCadastrar((prev) => [...prev, novoClube]);
+    setNome('');
+    setSigla('');
+    setPais('');
+    setMensagem('');
+    setErro(false);
+  };
 
   const cadastrarTodos = async () => {
     if (clubesParaCadastrar.length === 0) {
-      setMensagem('Adicione pelo menos um clube antes de cadastrar.')
-      setErro(true)
-      return
+      setMensagem('Adicione pelo menos um clube antes de cadastrar.');
+      setErro(true);
+      return;
     }
 
     try {
-      await axios.post('http://localhost:8080/api/clube/adicionar-em-lote', clubesParaCadastrar)
-      setMensagem('Todos os clubes foram cadastrados com sucesso!')
-      setErro(false)
-      setClubesParaCadastrar([])
+      await axios.post('http://localhost:8080/api/clube/adicionar-em-lote', clubesParaCadastrar);
+      setMensagem('Todos os clubes foram cadastrados com sucesso!');
+      setErro(false);
+      limparTudo();
 
-      // Volta para o menu do clube após o cadastro com sucesso
       setTimeout(() => {
-        navigate('/menu-clube')
-      }, 1200)
-
+        navigate('/');
+      }, 1200);
     } catch (err) {
-      console.error(err)
-      setMensagem('Erro ao cadastrar os clubes.')
-      setErro(true)
+      console.error(err);
+      setMensagem('Erro ao cadastrar os clubes.');
+      setErro(true);
     }
-  }
+  };
+
+  const handleVoltar = () => {
+    limparTudo();
+    navigate('/');
+  };
 
   return (
-    <div className="form-card">
-      {/* Setinha para voltar ao menu anterior */}
-      <div onClick={() => navigate('/menu-clube')} className="botao-voltar-circular" title="Voltar">
-        ←
+    <div className="form-background min-h-screen flex items-center justify-center p-6">
+      <div className="form-container max-w-md w-full p-8 rounded-2xl shadow-lg bg-gradient-to-r from-primaryPurple to-primaryGreen text-white">
+        {/* Botão Voltar */}
+        <button
+          onClick={handleVoltar}
+          title="Voltar para o menu"
+          aria-label="Voltar para o menu"
+          className="mb-6 flex items-center gap-2 text-[var(--primaryGreen)] hover:text-[var(--lightGreen)] transition"
+        >
+          <FiArrowLeft size={24} />
+          Voltar
+        </button>
+
+        <h2 className="form-title mb-6 text-center">Cadastro de Clubes em Lote</h2>
+
+        <form onSubmit={adicionarClubeNaLista} className="flex flex-col">
+          <input
+            type="text"
+            placeholder="Nome do Clube"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            className="form-input mb-4"
+          />
+          <input
+            type="text"
+            placeholder="Sigla"
+            value={sigla}
+            onChange={(e) => setSigla(e.target.value)}
+            className="form-input mb-4"
+          />
+          <input
+            type="text"
+            placeholder="País"
+            value={pais}
+            onChange={(e) => setPais(e.target.value)}
+            className="form-input mb-6"
+          />
+          <button
+            type="submit"
+            className="form-button w-full mb-6"
+          >
+            Adicionar à Lista
+          </button>
+        </form>
+
+        {clubesParaCadastrar.length > 0 && (
+          <section className="mb-6">
+            <h3 className="text-white font-semibold mb-3">Clubes na fila para cadastro:</h3>
+            <ul className="lista-clubes max-h-48 overflow-y-auto bg-primaryPurple p-3 rounded">
+              {clubesParaCadastrar.map((clube, index) => (
+                <li key={index} className="item-clube">
+                  {clube.nome} ({clube.sigla}, {clube.pais})
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={cadastrarTodos}
+              className="form-button w-full mt-4"
+            >
+              Cadastrar Todos
+            </button>
+          </section>
+        )}
+
+        {mensagem && (
+          <div
+            className={`mt-4 text-center font-medium p-2 rounded ${
+              erro ? 'bg-red-500 text-white' : 'bg-green-600 text-white'
+            }`}
+            role="alert"
+            aria-live="polite"
+          >
+            {mensagem}
+          </div>
+        )}
       </div>
-
-      <h2>Cadastro de Clubes</h2>
-
-      <form onSubmit={adicionarClubeNaLista}>
-        <input
-          type="text"
-          placeholder="Nome do Clube"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Sigla"
-          value={sigla}
-          onChange={(e) => setSigla(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="País"
-          value={pais}
-          onChange={(e) => setPais(e.target.value)}
-        />
-        <button type="submit">Adicionar à Lista</button>
-      </form>
-
-      {clubesParaCadastrar.length > 0 && (
-        <div style={{ marginTop: '1rem' }}>
-          <h4>Clubes na fila para cadastro:</h4>
-          <ul>
-            {clubesParaCadastrar.map((clube, index) => (
-              <li key={index}>
-                {clube.nome} ({clube.sigla}, {clube.pais})
-              </li>
-            ))}
-          </ul>
-          <button onClick={cadastrarTodos}>Cadastrar Todos</button>
-        </div>
-      )}
-
-      {mensagem && (
-        <div className={`mensagem ${erro ? 'erro' : 'sucesso'}`}>
-          {mensagem}
-        </div>
-      )}
     </div>
-  )
+  );
 }

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
+import { FaFutbol, FaRunning } from 'react-icons/fa';
+import { FiArrowLeft } from 'react-icons/fi';  // Importar o ícone da seta
 
 export default function EstatisticasAtletas() {
   const [estatisticas, setEstatisticas] = useState([]);
@@ -9,6 +11,7 @@ export default function EstatisticasAtletas() {
   const [erro, setErro] = useState(false);
   const [ordenarPor, setOrdenarPor] = useState('nome');
   const [expandedAtleta, setExpandedAtleta] = useState(null);
+  const {fecharBarra } = useOutletContext();
 
   const navigate = useNavigate();
 
@@ -30,16 +33,22 @@ export default function EstatisticasAtletas() {
     }
   };
 
+  const voltarParaMenuInicial = () => {
+    fecharBarra(null);
+    navigate('/');
+  };
+
   // Mapa para clube atual por chave combinada atletaId + nomeAtleta
   const clubeAtualPorId = atletas.reduce((acc, atleta) => {
-    const chave = `${atleta.atletaId}-${atleta.nome}`; // <-- Aqui a correção para atletaId
-    acc[chave] = atleta.clubeNome || 'Sem clube atual'; // Mantendo o que você já tinha para o clube
+    const chave = `${atleta.atletaId}-${atleta.nome}`;
+    acc[chave] = atleta.clubeNome || 'Sem clube atual';
     return acc;
   }, {});
 
-  // Agrupa estatísticas por atletaId + nomeAtleta para evitar misturar atletas com nomes iguais
+  // Agrupa estatísticas por atletaId + nomeAtleta para evitar confusão com nomes iguais
+  // Mantém o histórico na ordem original do backend (sem ordenar)
   const estatisticasPorAtleta = estatisticas.reduce((acc, stat) => {
-    const chave = `${stat.atletaId}-${stat.nomeAtleta}`; // Usa atletaId do backend
+    const chave = `${stat.atletaId}-${stat.nomeAtleta}`;
 
     if (!acc[chave]) {
       acc[chave] = {
@@ -59,6 +68,7 @@ export default function EstatisticasAtletas() {
       clube: stat.nomeClube,
       gols: stat.gols || 0,
       assistencias: stat.assistencias || 0,
+      dataInicio: stat.dataInicio, // só para referência futura
     });
 
     return acc;
@@ -93,24 +103,38 @@ export default function EstatisticasAtletas() {
 
   return (
     <div className="form-card estatisticas-atletas-container">
-      <div
-        className="botao-voltar-circular"
-        onClick={() => navigate('/menu-atleta')}
+      {/* Botão voltar com seta e texto */}
+      <button
+        onClick={voltarParaMenuInicial}
         title="Voltar para o menu"
+        aria-label="Voltar para o menu"
+        className="botao-voltar-circular mb-6 flex items-center gap-2 text-[var(--primaryGreen)] hover:text-[var(--lightGreen)] transition"
+        type="button"
+        
       >
-        ←
-      </div>
+        <FiArrowLeft size={24} />
+        Voltar
 
-      <h2>📊 Estatísticas dos Atletas</h2>
+      </button>
+
+      <h2 className="text-white text-3xl font-bold mb-6 text-center">
+        Estatísticas dos Atletas
+      </h2>
 
       {mensagem && (
-        <div className={`mensagem ${erro ? 'erro' : 'sucesso'}`}>{mensagem}</div>
+        <div className={`mensagem ${erro ? 'erro' : 'sucesso'} mb-6`}>
+          {mensagem}
+        </div>
       )}
 
-      <div className="filtros-estatisticas">
-        <label>
+      <div className="mb-6">
+        <label className="text-white font-semibold">
           Ordenar por:&nbsp;
-          <select value={ordenarPor} onChange={(e) => setOrdenarPor(e.target.value)}>
+          <select
+            value={ordenarPor}
+            onChange={(e) => setOrdenarPor(e.target.value)}
+            className="filtro-select"
+          >
             <option value="nome">Nome</option>
             <option value="gols">Gols</option>
             <option value="assistencias">Assistências</option>
@@ -118,29 +142,60 @@ export default function EstatisticasAtletas() {
         </label>
       </div>
 
-      <ul className="lista-estatisticas">
+      <ul className="space-y-4">
         {atletasOrdenados.length > 0 ? (
           atletasOrdenados.map((e) => {
             const chave = `${e.id}-${e.nome}`;
             return (
               <li
                 key={chave}
-                className="item-estatistica"
+                className="bg-primaryPurple rounded-lg p-4 shadow-md cursor-pointer"
                 onClick={() => toggleExpandir(chave)}
-                style={{ cursor: 'pointer' }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(ev) => {
+                  if (ev.key === 'Enter' || ev.key === ' ') toggleExpandir(chave);
+                }}
               >
-                <span><strong>Nome:</strong> {e.nome}</span>
-                <span><strong>Clube Atual:</strong> {e.clube}</span>
-                <span><strong>Gols:</strong> {e.gols}</span>
-                <span><strong>Assistências:</strong> {e.assistencias}</span>
+                <div className="grid grid-cols-[1.5fr_2fr_1fr_1fr] gap-4 items-center">
+                  <span
+                    className="text-white font-semibold truncate"
+                    title={e.nome}
+                  >
+                    {e.nome}
+                  </span>
+
+                  <span
+                    className="text-white truncate"
+                    title={e.clube}
+                  >
+                    <strong>Clube Atual: </strong> {e.clube}
+                  </span>
+
+                  <span className="flex items-center gap-1 text-white font-semibold justify-center">
+                    <FaFutbol className="text-green-400" />
+                    {e.gols}
+                  </span>
+
+                  <span className="flex items-center gap-1 text-white font-semibold justify-center">
+                    <FaRunning className="text-green-400" />
+                    {e.assistencias}
+                  </span>
+                </div>
 
                 {expandedAtleta === chave && (
-                  <div className="historico-clubes">
-                    <h4>📂 Histórico por clube:</h4>
-                    <ul>
+                  <div className="mt-4 bg-primaryGreen bg-opacity-20 rounded-md p-3 text-white max-h-56 overflow-y-auto">
+                    <h4 className="font-semibold mb-2">Histórico por clube:</h4>
+                    <ul className="list-disc list-inside space-y-1">
                       {e.historico.map((h, i) => (
-                        <li key={i}>
-                          <strong>{h.clube}</strong> — {h.gols} gol{h.gols !== 1 ? 's' : ''}, {h.assistencias} assistência{h.assistencias !== 1 ? 's' : ''}
+                        <li
+                          key={i}
+                          className="truncate"
+                          title={`${h.clube}: ${h.gols} gols, ${h.assistencias} assistências`}
+                        >
+                          <strong>{h.clube}</strong> — {h.gols} gol
+                          {h.gols !== 1 ? 's' : ''}, {h.assistencias} assistência
+                          {h.assistencias !== 1 ? 's' : ''}
                         </li>
                       ))}
                     </ul>
@@ -150,28 +205,42 @@ export default function EstatisticasAtletas() {
             );
           })
         ) : (
-          <li>Nenhuma estatística encontrada.</li>
+          <li className="text-white">Nenhuma estatística encontrada.</li>
         )}
       </ul>
 
-      <div className="ranking-container">
-        <div className="ranking-box">
-          <h3>🏆 Top 3 Goleadores</h3>
-          <ol>
+      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="bg-primaryPurple rounded-lg p-4 shadow-md">
+          <h3 className="text-white font-bold mb-4 text-center">
+            Top 3 Goleadores
+          </h3>
+          <ol className="list-decimal list-inside text-white space-y-1">
             {rankingGols.map((a, i) => (
-              <li key={i}>
+              <li
+                key={i}
+                className="truncate"
+                title={`${a.nome}: ${a.gols} gol${a.gols !== 1 ? 's' : ''}`}
+              >
                 <strong>{a.nome}</strong> — {a.gols} gol{a.gols !== 1 ? 's' : ''}
               </li>
             ))}
           </ol>
         </div>
 
-        <div className="ranking-box">
-          <h3>🎯 Top 3 Assistentes</h3>
-          <ol>
+        <div className="bg-primaryPurple rounded-lg p-4 shadow-md">
+          <h3 className="text-white font-bold mb-4 text-center">
+            Top 3 Assistentes
+          </h3>
+          <ol className="list-decimal list-inside text-white space-y-1">
             {rankingAssistencias.map((a, i) => (
-              <li key={i}>
-                <strong>{a.nome}</strong> — {a.assistencias} assistência{a.assistencias !== 1 ? 's' : ''}
+              <li
+                key={i}
+                className="truncate"
+                title={`${a.nome}: ${a.assistencias} assistência${a.assistencias !== 1 ? 's' : ''
+                  }`}
+              >
+                <strong>{a.nome}</strong> — {a.assistencias} assistência
+                {a.assistencias !== 1 ? 's' : ''}
               </li>
             ))}
           </ol>

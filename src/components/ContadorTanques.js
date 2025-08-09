@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { territoriosWar } from './TerritoriosTanques.js';
-import '../ContadorTanques.css';
 
 const MAX_VIDAS = 10;
 const MIN_VIDAS = 0;
