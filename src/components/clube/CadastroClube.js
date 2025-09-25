@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft } from 'react-icons/fi';
+import { useNavigate, useOutletContext } from 'react-router-dom';
+import BotaoVoltar from '../BotaoVoltar';
 
 export default function CadastroClubeEmLote() {
   const [nome, setNome] = useState('');
@@ -10,8 +10,10 @@ export default function CadastroClubeEmLote() {
   const [mensagem, setMensagem] = useState('');
   const [erro, setErro] = useState(false);
   const [clubesParaCadastrar, setClubesParaCadastrar] = useState([]);
+  const { fecharBarra } = useOutletContext();
 
   const navigate = useNavigate();
+
 
   const limparTudo = () => {
     setNome('');
@@ -21,6 +23,7 @@ export default function CadastroClubeEmLote() {
     setErro(false);
     setClubesParaCadastrar([]);
   };
+
 
   const adicionarClubeNaLista = (e) => {
     e.preventDefault();
@@ -70,24 +73,18 @@ export default function CadastroClubeEmLote() {
 
   const handleVoltar = () => {
     limparTudo();
+    fecharBarra(null);
     navigate('/');
   };
 
   return (
     <div className="form-background min-h-screen flex items-center justify-center p-6">
       <div className="form-container max-w-md w-full p-8 rounded-2xl shadow-lg bg-gradient-to-r from-primaryPurple to-primaryGreen text-white">
-        {/* Botão Voltar */}
-        <button
-          onClick={handleVoltar}
-          title="Voltar para o menu"
-          aria-label="Voltar para o menu"
-          className="mb-6 flex items-center gap-2 text-[var(--primaryGreen)] hover:text-[var(--lightGreen)] transition"
-        >
-          <FiArrowLeft size={24} />
-          Voltar
-        </button>
-
-        <h2 className="form-title mb-6 text-center">Cadastro de Clubes em Lote</h2>
+        <div className="flex items-center mb-6">
+          <BotaoVoltar onClick={handleVoltar} />
+          <h2 className="form-title">Cadastro de Clubes</h2>
+        </div>
+  
 
         <form onSubmit={adicionarClubeNaLista} className="flex flex-col">
           <input
@@ -140,9 +137,8 @@ export default function CadastroClubeEmLote() {
 
         {mensagem && (
           <div
-            className={`mt-4 text-center font-medium p-2 rounded ${
-              erro ? 'bg-red-500 text-white' : 'bg-green-600 text-white'
-            }`}
+            className={`mt-4 text-center font-medium p-2 rounded ${erro ? 'bg-red-500 text-white' : 'bg-green-600 text-white'
+              }`}
             role="alert"
             aria-live="polite"
           >

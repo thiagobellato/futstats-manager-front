@@ -107,6 +107,8 @@ export default function GerenciarAtleta() {
           [atletaId]: {
             gols: estat.gols ?? 0,
             assistencias: estat.assistencias ?? 0,
+            cartaoAmarelo: estat.cartaoAmarelo ?? 0, // ADICIONE ESTA LINHA
+            cartaoVermelho: estat.cartaoVermelho ?? 0,
           },
         }));
 
@@ -160,6 +162,9 @@ export default function GerenciarAtleta() {
       clubeId,
       gols: valores?.gols ?? 0,
       assistencias: valores?.assistencias ?? 0,
+      cartaoAmarelo: valores?.cartaoAmarelo ?? 0,
+      cartaoVermelho: valores?.cartaoVermelho ?? 0,
+
     };
 
     try {
@@ -485,12 +490,13 @@ export default function GerenciarAtleta() {
                       backgroundColor: 'var(--primaryPurple)',
                       padding: '8px 12px',
                       borderRadius: 6,
-                      maxHeight: 140,
+                      maxHeight: 200,
                       overflowY: 'auto',
                       scrollbarWidth: 'none', // Firefox
                       msOverflowStyle: 'none', // IE 10+
                     }}
                   >
+                    {/* Linha superior: Gols e Assistências */}
                     <div
                       style={{
                         display: 'flex',
@@ -498,6 +504,7 @@ export default function GerenciarAtleta() {
                         justifyContent: 'center',
                         alignItems: 'center',
                         flexWrap: 'nowrap',
+                        marginBottom: 12,
                       }}
                     >
                       {/* Gols */}
@@ -589,11 +596,7 @@ export default function GerenciarAtleta() {
                         >
                           <button
                             onClick={() =>
-                              handleIncrementarEstatistica(
-                                a.atletaId,
-                                'assistencias',
-                                1
-                              )
+                              handleIncrementarEstatistica(a.atletaId, 'assistencias', 1)
                             }
                             aria-label="Adicionar assistência"
                             className="btn-icon"
@@ -614,11 +617,7 @@ export default function GerenciarAtleta() {
                           </button>
                           <button
                             onClick={() =>
-                              handleIncrementarEstatistica(
-                                a.atletaId,
-                                'assistencias',
-                                -1
-                              )
+                              handleIncrementarEstatistica(a.atletaId, 'assistencias', -1)
                             }
                             aria-label="Remover assistência"
                             className="btn-icon"
@@ -640,8 +639,152 @@ export default function GerenciarAtleta() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Linha inferior: Cartões Amarelos e Vermelhos */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 20,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        flexWrap: 'nowrap',
+                      }}
+                    >
+                      {/* Cartões Amarelos */}
+                      <div
+                        className="estatistica-item"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          minWidth: 60,
+                        }}
+                      >
+                        <strong>Cartão Amarelo</strong>
+                        <span style={{ fontSize: 20, fontWeight: 'bold' }}>
+                          {dadosEstatistica[a.atletaId]?.cartaoAmarelo ?? 0}
+                        </span>
+                        <div
+                          style={{
+                            display: 'flex',
+                            gap: 6,
+                            marginTop: 4,
+                          }}
+                        >
+                          <button
+                            onClick={() =>
+                              handleIncrementarEstatistica(a.atletaId, 'cartaoAmarelo', 1)
+                            }
+                            aria-label="Adicionar cartão amarelo"
+                            className="btn-icon"
+                            style={{
+                              border: '1px solid white',
+                              borderRadius: 4,
+                              padding: '2px 6px',
+                              color: 'white',
+                              backgroundColor: 'transparent',
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <AiOutlinePlus size={14} />
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleIncrementarEstatistica(a.atletaId, 'cartaoAmarelo', -1)
+                            }
+                            aria-label="Remover cartão amarelo"
+                            className="btn-icon"
+                            style={{
+                              border: '1px solid white',
+                              borderRadius: 4,
+                              padding: '2px 6px',
+                              color: 'white',
+                              backgroundColor: 'transparent',
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <AiOutlineMinus size={14} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Cartões Vermelhos */}
+                      <div
+                        className="estatistica-item"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          minWidth: 60,
+                        }}
+                      >
+                        <strong>Cartão Vermelho</strong>
+                        <span style={{ fontSize: 20, fontWeight: 'bold' }}>
+                          {dadosEstatistica[a.atletaId]?.cartaoVermelho ?? 0}
+                        </span>
+                        <div
+                          style={{
+                            display: 'flex',
+                            gap: 6,
+                            marginTop: 4,
+                          }}
+                        >
+                          <button
+                            onClick={() =>
+                              handleIncrementarEstatistica(a.atletaId, 'cartaoVermelho', 1)
+                            }
+                            aria-label="Adicionar cartão vermelho"
+                            className="btn-icon"
+                            style={{
+                              border: '1px solid white',
+                              borderRadius: 4,
+                              padding: '2px 6px',
+                              color: 'white',
+                              backgroundColor: 'transparent',
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <AiOutlinePlus size={14} />
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleIncrementarEstatistica(a.atletaId, 'cartaoVermelho', -1)
+                            }
+                            aria-label="Remover cartão vermelho"
+                            className="btn-icon"
+                            style={{
+                              border: '1px solid white',
+                              borderRadius: 4,
+                              padding: '2px 6px',
+                              color: 'white',
+                              backgroundColor: 'transparent',
+                              cursor: 'pointer',
+                              fontWeight: 'bold',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <AiOutlineMinus size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
+
 
                 {/* Painel compacto de transferência */}
                 {atletaParaTransferirId === a.atletaId && (

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { FaFutbol, FaRunning } from 'react-icons/fa';
-import { FiArrowLeft } from 'react-icons/fi';  // Importar o ícone da seta
+import BotaoVoltar from '../BotaoVoltar';
 
 export default function EstatisticasAtletas() {
   const [estatisticas, setEstatisticas] = useState([]);
@@ -11,7 +11,7 @@ export default function EstatisticasAtletas() {
   const [erro, setErro] = useState(false);
   const [ordenarPor, setOrdenarPor] = useState('nome');
   const [expandedAtleta, setExpandedAtleta] = useState(null);
-  const {fecharBarra } = useOutletContext();
+  const { fecharBarra } = useOutletContext();
 
   const navigate = useNavigate();
 
@@ -33,7 +33,7 @@ export default function EstatisticasAtletas() {
     }
   };
 
-  const voltarParaMenuInicial = () => {
+  const handleVoltar = () => {
     fecharBarra(null);
     navigate('/');
   };
@@ -56,6 +56,8 @@ export default function EstatisticasAtletas() {
         nome: stat.nomeAtleta,
         gols: 0,
         assistencias: 0,
+        cartaoAmarelo: 0,
+        cartaoVermelho: 0,
         clube: clubeAtualPorId[chave] || stat.nomeClube || 'Sem clube',
         historico: [],
       };
@@ -63,11 +65,15 @@ export default function EstatisticasAtletas() {
 
     acc[chave].gols += stat.gols || 0;
     acc[chave].assistencias += stat.assistencias || 0;
+    acc[chave].cartaoAmarelo += stat.cartaoAmarelo || 0;
+    acc[chave].cartaoVermelho += stat.cartaoVermelho || 0;
 
     acc[chave].historico.push({
       clube: stat.nomeClube,
       gols: stat.gols || 0,
       assistencias: stat.assistencias || 0,
+      cartaoAmarelo: stat.cartaoAmarelo || 0,
+      cartaoVermelho: stat.cartaoVermelho || 0,
       dataInicio: stat.dataInicio, // só para referência futura
     });
 
@@ -103,23 +109,15 @@ export default function EstatisticasAtletas() {
 
   return (
     <div className="form-card estatisticas-atletas-container">
-      {/* Botão voltar com seta e texto */}
-      <button
-        onClick={voltarParaMenuInicial}
-        title="Voltar para o menu"
-        aria-label="Voltar para o menu"
-        className="botao-voltar-circular mb-6 flex items-center gap-2 text-[var(--primaryGreen)] hover:text-[var(--lightGreen)] transition"
-        type="button"
+
+      <div className="flex items-center mb-6">
         
-      >
-        <FiArrowLeft size={24} />
-        Voltar
+      <BotaoVoltar onClick={handleVoltar} />
 
-      </button>
-
-      <h2 className="text-white text-3xl font-bold mb-6 text-center">
+      <h2 className="form-title">
         Estatísticas dos Atletas
       </h2>
+      </div>
 
       {mensagem && (
         <div className={`mensagem ${erro ? 'erro' : 'sucesso'} mb-6`}>
@@ -180,6 +178,13 @@ export default function EstatisticasAtletas() {
                   <span className="flex items-center gap-1 text-white font-semibold justify-center">
                     <FaRunning className="text-green-400" />
                     {e.assistencias}
+
+                    <span className="ml-4 text-yellow-300 font-normal">
+                      {e.cartaoAmarelo} <span title="Cartões Amarelos">🟨</span>
+                    </span>
+                    <span className="ml-2 text-red-500 font-normal">
+                      {e.cartaoVermelho} <span title="Cartões Vermelhos">🟥</span>
+                    </span>
                   </span>
                 </div>
 
@@ -196,6 +201,8 @@ export default function EstatisticasAtletas() {
                           <strong>{h.clube}</strong> — {h.gols} gol
                           {h.gols !== 1 ? 's' : ''}, {h.assistencias} assistência
                           {h.assistencias !== 1 ? 's' : ''}
+                          {h.cartaoAmarelo ? `, ${h.cartaoAmarelo} 🟨` : ''
+                          }{h.cartaoVermelho ? `, ${h.cartaoVermelho} 🟥` : ''}
                         </li>
                       ))}
                     </ul>

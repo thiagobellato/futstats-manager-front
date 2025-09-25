@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import axios from 'axios';
-import { FiArrowLeft, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import BotaoVoltar from '../BotaoVoltar';
+import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 
 export default function GerenciarClube() {
   const [clubes, setClubes] = useState([]);
@@ -73,20 +74,11 @@ export default function GerenciarClube() {
   return (
     <div className="form-background">
       <div className="form-card" style={{ maxWidth: 600, margin: '0 auto', padding: 20 }}>
-        {/* Botão voltar com seta e texto */}
-        <button
-          type="button"
-          onClick={handleVoltar}
-          title="Voltar para Menu Principal"
-          aria-label="Voltar para Menu Principal"
-          className="botao-voltar-circular mb-6 flex items-center gap-2 text-[var(--primaryGreen)] hover:text-[var(--lightGreen)] transition"
-          style={{ fontSize: 24 }}
-        >
-          <FiArrowLeft size={24} />
-          Voltar
-        </button>
 
-        <h2 style={{ color: 'white', marginBottom: '1rem' }}>Gerenciar Clubes</h2>
+        <div className="flex items-center mb-6">
+          <BotaoVoltar onClick={handleVoltar} />
+          <h2 className="form-title">Gerenciar Clubes</h2>
+        </div>
 
         {mensagem && (
           <div className={`mensagem ${erro ? 'erro' : 'sucesso'}`}>
