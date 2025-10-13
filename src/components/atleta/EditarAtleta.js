@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'react-feather';
 
-
 export default function EditarAtleta() {
   const [atleta, setAtleta] = useState(null);
   const [posicoes, setPosicoes] = useState([]);
@@ -15,6 +14,16 @@ export default function EditarAtleta() {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const id = queryParams.get('id');
+
+  // Função Capitalizer (igual ao cadastro em lote)
+  const capitalizarNome = (texto = '') => {
+    return texto
+      .toLowerCase()
+      .split(' ')
+      .filter(Boolean)
+      .map((palavra) => palavra.charAt(0).toUpperCase() + palavra.slice(1))
+      .join(' ');
+  };
 
   useEffect(() => {
     if (id) carregarDados(id);
@@ -55,11 +64,12 @@ export default function EditarAtleta() {
     e.preventDefault();
 
     try {
+      // Aplica formatação SOMENTE aqui, antes de enviar ao backend
       const payload = {
-        nome: atleta.nome || null,
-        sobrenome: atleta.sobrenome || null,
+        nome: atleta.nome ? capitalizarNome(atleta.nome) : null,
+        sobrenome: atleta.sobrenome ? capitalizarNome(atleta.sobrenome) : null,
         dataDeNascimento: atleta.dataDeNascimento || null,
-        nacionalidade: atleta.nacionalidade || null,
+        nacionalidade: atleta.nacionalidade ? atleta.nacionalidade.toLowerCase() : null,
         posicao: atleta.posicao || null,
       };
 
@@ -102,6 +112,7 @@ export default function EditarAtleta() {
             type="text"
             placeholder="Nome"
             value={atleta.nome}
+            // NÃO formata durante a digitação — mantém o que o usuário digitar
             onChange={(e) => setAtleta({ ...atleta, nome: e.target.value })}
             className="form-input"
           />
@@ -110,6 +121,7 @@ export default function EditarAtleta() {
             type="text"
             placeholder="Sobrenome"
             value={atleta.sobrenome}
+            // NÃO formata durante a digitação — formatação ocorre no submit
             onChange={(e) => setAtleta({ ...atleta, sobrenome: e.target.value })}
             className="form-input"
           />
@@ -125,6 +137,7 @@ export default function EditarAtleta() {
             type="text"
             placeholder="Nacionalidade"
             value={atleta.nacionalidade}
+            // NÃO altera enquanto digita; será transformada para minúsculas ao salvar
             onChange={(e) => setAtleta({ ...atleta, nacionalidade: e.target.value })}
             className="form-input"
           />

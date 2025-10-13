@@ -111,12 +111,12 @@ export default function EstatisticasAtletas() {
     <div className="form-card estatisticas-atletas-container">
 
       <div className="flex items-center mb-6">
-        
-      <BotaoVoltar onClick={handleVoltar} />
 
-      <h2 className="form-title">
-        Estatísticas dos Atletas
-      </h2>
+        <BotaoVoltar onClick={handleVoltar} />
+
+        <h2 className="form-title">
+          Estatísticas dos Atletas
+        </h2>
       </div>
 
       {mensagem && (
@@ -170,22 +170,39 @@ export default function EstatisticasAtletas() {
                     <strong>Clube Atual: </strong> {e.clube}
                   </span>
 
-                  <span className="flex items-center gap-1 text-white font-semibold justify-center">
-                    <FaFutbol className="text-green-400" />
-                    {e.gols}
-                  </span>
+                  {/* Ajuste principal: forçar o bloco de estatísticas para a coluna mais à direita */}
+                  <div className="flex items-end gap-6 justify-end text-white font-semibold ml-auto col-start-4 justify-self-end">
+                    {/* Coluna Gols + Amarelo */}
+                    <div className="flex flex-col items-center">
+                      <span className="flex items-center gap-1">
+                        <FaFutbol className="text-green-400" />
+                        {e.gols}
+                      </span>
+                      <span className="flex items-center gap-1 text-yellow-300 text-xs mt-1">
+                        {e.cartaoAmarelo}
+                        <span
+                          className="w-3 h-4 rounded-sm border border-yellow-400 bg-yellow-300"
+                          title="Cartões Amarelos"
+                        />
+                      </span>
+                    </div>
 
-                  <span className="flex items-center gap-1 text-white font-semibold justify-center">
-                    <FaRunning className="text-green-400" />
-                    {e.assistencias}
+                    {/* Coluna Assistências + Vermelho */}
+                    <div className="flex flex-col items-center">
+                      <span className="flex items-center gap-1">
+                        <FaRunning className="text-green-400" />
+                        {e.assistencias}
+                      </span>
+                      <span className="flex items-center gap-1 text-red-500 text-xs mt-1">
+                        {e.cartaoVermelho}
+                        <span
+                          className="w-3 h-4 rounded-sm border border-red-500 bg-red-500"
+                          title="Cartões Vermelhos"
+                        />
+                      </span>
+                    </div>
+                  </div>
 
-                    <span className="ml-4 text-yellow-300 font-normal">
-                      {e.cartaoAmarelo} <span title="Cartões Amarelos">🟨</span>
-                    </span>
-                    <span className="ml-2 text-red-500 font-normal">
-                      {e.cartaoVermelho} <span title="Cartões Vermelhos">🟥</span>
-                    </span>
-                  </span>
                 </div>
 
                 {expandedAtleta === chave && (
@@ -196,13 +213,27 @@ export default function EstatisticasAtletas() {
                         <li
                           key={i}
                           className="truncate"
-                          title={`${h.clube}: ${h.gols} gols, ${h.assistencias} assistências`}
+                          title={`${h.clube}: ${h.gols} gols, ${h.assistencias} assistências${h.cartaoAmarelo ? `, ${h.cartaoAmarelo} amarelos` : ''}${h.cartaoVermelho ? `, ${h.cartaoVermelho} vermelhos` : ''}`}
                         >
                           <strong>{h.clube}</strong> — {h.gols} gol
                           {h.gols !== 1 ? 's' : ''}, {h.assistencias} assistência
                           {h.assistencias !== 1 ? 's' : ''}
-                          {h.cartaoAmarelo ? `, ${h.cartaoAmarelo} 🟨` : ''
-                          }{h.cartaoVermelho ? `, ${h.cartaoVermelho} 🟥` : ''}
+
+                          {/* Substituí os emojis por spans com as mesmas classes visuais dos cartões */}
+                          {h.cartaoAmarelo ? (
+                            <span className="ml-1 inline-flex items-center gap-1 text-yellow-300 text-xs" title="Cartões Amarelos">
+                              , {h.cartaoAmarelo}
+                              <span className="w-3 h-4 rounded-sm border border-yellow-400 bg-yellow-300 inline-block" />
+                            </span>
+                          ) : null}
+
+                          {h.cartaoVermelho ? (
+                            <span className="ml-1 inline-flex items-center gap-1 text-red-500 text-xs" title="Cartões Vermelhos">
+                              , {h.cartaoVermelho}
+                              <span className="w-3 h-4 rounded-sm border border-red-500 bg-red-500 inline-block" />
+                            </span>
+                          ) : null}
+
                         </li>
                       ))}
                     </ul>
@@ -243,8 +274,7 @@ export default function EstatisticasAtletas() {
               <li
                 key={i}
                 className="truncate"
-                title={`${a.nome}: ${a.assistencias} assistência${a.assistencias !== 1 ? 's' : ''
-                  }`}
+                title={`${a.nome}: ${a.assistencias} assistência${a.assistencias !== 1 ? 's' : ''}`}
               >
                 <strong>{a.nome}</strong> — {a.assistencias} assistência
                 {a.assistencias !== 1 ? 's' : ''}

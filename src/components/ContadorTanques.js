@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { territoriosWar } from './TerritoriosTanques.js';
+import { useState } from "react";
+import { territoriosWar } from "./TerritoriosTanques.js";
 
 const MAX_VIDAS = 10;
 const MIN_VIDAS = 0;
@@ -12,7 +12,7 @@ export default function ContadorDeTanques() {
       nome: `Jogador ${index + 1}`,
       tanques: Array.from({ length: TANQUES_POR_JOGADOR }, () => ({
         vidas: MAX_VIDAS,
-        territorio: '',
+        territorio: "",
       })),
     }))
   );
@@ -26,10 +26,13 @@ export default function ContadorDeTanques() {
   };
 
   const handleVida = (jogadorIndex, tanqueIndex, delta) => {
-    setJogadores(prev => {
+    setJogadores((prev) => {
       const atual = [...prev];
       const tanque = atual[jogadorIndex].tanques[tanqueIndex];
-      const novaVida = Math.max(MIN_VIDAS, Math.min(MAX_VIDAS, tanque.vidas + delta));
+      const novaVida = Math.max(
+        MIN_VIDAS,
+        Math.min(MAX_VIDAS, tanque.vidas + delta)
+      );
       tanque.vidas = novaVida;
       return atual;
     });
@@ -42,26 +45,30 @@ export default function ContadorDeTanques() {
   };
 
   const getCorFundo = (vidas) => {
-    if (vidas === 0) return '#1f1f1f';
-    if (vidas <= 3) return '#dc2626';
-    if (vidas <= 5) return '#facc15';
-    return '#22c55e';
+    if (vidas === 0) return "#1f1f1f";
+    if (vidas <= 3) return "#dc2626";
+    if (vidas <= 5) return "#facc15";
+    return "#22c55e";
   };
 
   const getIconeDados = (vidas) => {
-    if (vidas >= 3) return '🎲🎲🎲';
-    if (vidas === 2) return '🎲🎲';
-    if (vidas === 1) return '🎲';
-    return '💥';
+    if (vidas >= 3) return "🎲🎲🎲";
+    if (vidas === 2) return "🎲🎲";
+    if (vidas === 1) return "🎲";
+    return "💥";
   };
 
   return (
-    <div className="tanque-manager-container">
-      <div className="select-jogador">
-        <label>Selecionar Jogador: </label>
+    <div className="form-card">
+      {/* Seleção de jogador */}
+      <div className="mb-6">
+        <label className="text-white font-semibold mr-2">
+          Selecionar Jogador:
+        </label>
         <select
           value={jogadorSelecionado}
           onChange={(e) => setJogadorSelecionado(parseInt(e.target.value))}
+          className="filtro-select"
         >
           {jogadores.map((j, index) => (
             <option key={index} value={index}>
@@ -71,46 +78,60 @@ export default function ContadorDeTanques() {
         </select>
       </div>
 
-      <div className="jogador-editor">
+      {/* Nome do jogador */}
+      <div className="mb-6">
         <input
           type="text"
           value={jogadores[jogadorSelecionado].nome}
           onChange={(e) => handleChangeNome(jogadorSelecionado, e.target.value)}
           placeholder="Nome do jogador"
-          className="input-nome"
+          className="form-input"
         />
       </div>
 
-      <div className="tanques-grid">
+      {/* Grid de tanques */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {jogadores[jogadorSelecionado].tanques.map((tanque, index) => (
           <div
             key={index}
-            className="tanque-card"
+            className="rounded-xl shadow-lg p-4 text-center text-white"
             style={{ backgroundColor: getCorFundo(tanque.vidas) }}
           >
-            <div className="titulo-tanque">
+            <div className="text-lg font-bold mb-2">
               🛡️ Tanque {index + 1}
             </div>
 
-            <div className="vidas-info">
+            <div className="mb-3 font-semibold">
               {tanque.vidas} vidas &nbsp; {getIconeDados(tanque.vidas)}
             </div>
 
-            <div className="botoes-contador">
-              <button onClick={() => handleVida(jogadorSelecionado, index, -1)}>-</button>
-              <button onClick={() => handleVida(jogadorSelecionado, index, 1)}>+</button>
+            <div className="flex justify-center space-x-3 mb-3">
+              <button
+                onClick={() => handleVida(jogadorSelecionado, index, -1)}
+                className="botao-estatistica"
+              >
+                -
+              </button>
+              <button
+                onClick={() => handleVida(jogadorSelecionado, index, 1)}
+                className="botao-estatistica"
+              >
+                +
+              </button>
             </div>
 
             <select
               value={tanque.territorio}
-              onChange={(e) => handleTerritorioChange(jogadorSelecionado, index, e.target.value)}
-              className="territorio-select"
+              onChange={(e) =>
+                handleTerritorioChange(jogadorSelecionado, index, e.target.value)
+              }
+              className="filtro-select w-full"
               style={{
                 backgroundColor:
-                  territoriosWar.find(t => t.nome === tanque.territorio)?.cor || 'white',
-                color: '#000',
-                fontWeight: 'bold',
-                marginTop: '8px',
+                  territoriosWar.find((t) => t.nome === tanque.territorio)?.cor ||
+                  "white",
+                color: "#000",
+                fontWeight: "bold",
               }}
             >
               <option value="">Selecione o território</option>

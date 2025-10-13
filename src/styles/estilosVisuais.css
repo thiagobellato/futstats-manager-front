@@ -91,6 +91,20 @@
     @apply ml-2 font-semibold;
   }
 
+  @layer utilities {
+  .cartao {
+    @apply inline-block w-5 h-7 rounded-sm shadow-md;
+  }
+
+  .cartao-amarelo {
+    @apply bg-yellow-400 border border-yellow-600;
+  }
+
+  .cartao-vermelho {
+    @apply bg-red-600 border border-red-800;
+  }
+}
+
 
 
 }

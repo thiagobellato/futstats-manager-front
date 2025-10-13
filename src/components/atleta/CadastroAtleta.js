@@ -5,6 +5,8 @@ import BotaoVoltar from '../BotaoVoltar';
 
 export default function CadastroAtletaEmLote() {
   const [nome, setNome] = useState('');
+  const [posicao, setPosicao] = useState('');
+  const [posicoes, setPosicoes] = useState([]);
   const [clubeId, setClubeId] = useState('');
   const [clubes, setClubes] = useState([]);
   const [mensagem, setMensagem] = useState('');
@@ -16,13 +18,13 @@ export default function CadastroAtletaEmLote() {
 
   const limparTudo = () => {
     setNome('');
+    setPosicao('');
     setClubeId('');
     setAtletasParaCadastrar([]);
     setMensagem('');
     setErro(false);
   };
 
-  // função para quando clicar no BotaoVoltar
   const handleVoltar = () => {
     limparTudo();
     fecharBarra(null);
@@ -30,17 +32,60 @@ export default function CadastroAtletaEmLote() {
   };
 
   useEffect(() => {
+    let mounted = true;
+
     async function carregarClubes() {
       try {
         const resposta = await axios.get('http://localhost:8080/api/clube');
-        setClubes(resposta.data);
+        if (mounted) setClubes(resposta.data || []);
       } catch (err) {
         console.error('Erro ao carregar clubes:', err);
+        if (mounted) setClubes([]);
+      }
+    }
+
+    async function carregarPosicoes() {
+      try {
+        const resposta = await axios.get('http://localhost:8080/api/enums/posicoes');
+        const data = resposta.data || [];
+
+        const formatadas = data.map((item) => {
+          if (typeof item === 'string') {
+            const label = `[${item}] ${item.charAt(0).toUpperCase() + item.slice(1).toLowerCase()}`;
+            return { value: item, label };
+          }
+          if (item && typeof item === 'object') {
+            const sigla = item.sigla || item.name || item.value || '';
+            const nome = item.descricao || item.nome || item.label || '';
+            return { value: sigla, label: `[${sigla}] ${nome}` };
+          }
+          return { value: String(item), label: String(item) };
+        });
+
+        if (mounted) setPosicoes(formatadas);
+      } catch (err) {
+        console.error('Erro ao carregar posições:', err);
+        if (mounted) setPosicoes([]);
       }
     }
 
     carregarClubes();
+    carregarPosicoes();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
+
+  // 🔤 Função Capitalizer para nomes de atletas
+  const capitalizarNome = (texto) => {
+    return texto
+      .toLowerCase()
+      .split(' ')
+      .filter(Boolean)
+      .map((palavra) => palavra.charAt(0).toUpperCase() + palavra.slice(1))
+      .join(' ');
+  };
 
   const adicionarAtletaNaLista = (e) => {
     e.preventDefault();
@@ -51,16 +96,24 @@ export default function CadastroAtletaEmLote() {
       return;
     }
 
+    if (!posicao) {
+      setMensagem('A posição do atleta é obrigatória.');
+      setErro(true);
+      return;
+    }
+
     const clubeSelecionado = clubes.find(c => c.clubeId === parseInt(clubeId));
 
     const novoAtleta = {
-      nome: nome.trim(),
+      nome: capitalizarNome(nome.trim()),
+      posicao,
       clubeId: clubeId ? parseInt(clubeId) : null,
       clubeNome: clubeSelecionado?.nome || 'Sem Clube',
     };
 
     setAtletasParaCadastrar((prev) => [...prev, novoAtleta]);
     setNome('');
+    setPosicao('');
     setClubeId('');
     setMensagem('');
     setErro(false);
@@ -91,12 +144,12 @@ export default function CadastroAtletaEmLote() {
 
   return (
     <div className="form-background min-h-screen flex items-center justify-center p-6">
-  <div className="form-container max-w-md w-full p-8 rounded-2xl shadow-lg bg-gradient-to-r from-primaryPurple to-primaryGreen text-white">
-    
-    <div className="flex items-center mb-6">
-      <BotaoVoltar onClick={handleVoltar} />
-      <h2 className="form-title">Cadastro de Atletas</h2>
-    </div>
+      <div className="form-container max-w-md w-full p-8 rounded-2xl shadow-lg bg-gradient-to-r from-primaryPurple to-primaryGreen text-white">
+        
+        <div className="flex items-center mb-6">
+          <BotaoVoltar onClick={handleVoltar} />
+          <h2 className="form-title">Cadastro de Atletas</h2>
+        </div>
 
         <form onSubmit={adicionarAtletaNaLista} className="flex flex-col">
           <input
@@ -107,6 +160,21 @@ export default function CadastroAtletaEmLote() {
             className="form-input mb-4"
             required
           />
+
+          {/* 🔽 Campo de posição vindo do enum do back-end */}
+          <select
+            value={posicao}
+            onChange={(e) => setPosicao(e.target.value)}
+            className="form-input mb-4"
+            required
+          >
+            <option value="">-- Selecione a Posição --</option>
+            {posicoes.map((p, index) => (
+              <option key={index} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </select>
 
           <select
             value={clubeId}
@@ -135,7 +203,7 @@ export default function CadastroAtletaEmLote() {
             <ul className="lista-clubes max-h-48 overflow-y-auto bg-primaryPurple p-3 rounded">
               {atletasParaCadastrar.map((atleta, index) => (
                 <li key={index} className="item-clube">
-                  {atleta.nome} ({atleta.clubeNome})
+                  {atleta.nome} - {atleta.posicao} ({atleta.clubeNome})
                 </li>
               ))}
             </ul>
