@@ -206,29 +206,33 @@ export default function EstatisticasAtletas() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-8">
-                    <div className="text-center w-12">
-                      <p className="text-[10px] text-brand-muted uppercase font-bold">Gols</p>
-                      <p className="font-black text-brand-primary">{e.gols}</p>
-                    </div>
-                    <div className="text-center w-12">
-                      <p className="text-[10px] text-brand-muted uppercase font-bold">Ass.</p>
-                      <p className="font-black text-blue-500">{e.assistencias}</p>
-                    </div>
-                    <div className="flex gap-1 items-center ml-4">
-                      {e.cartaoAmarelo > 0 && (
-                        <div className="flex items-center gap-1 text-[10px] font-bold text-yellow-500">
-                           <div className="w-2 h-3 bg-yellow-500 rounded-sm"></div> {e.cartaoAmarelo}
+                  <div className="flex items-center gap-10">
+                    <div className="flex items-center gap-6">
+                      <div className="text-center w-12">
+                        <p className="text-[10px] text-brand-muted uppercase font-bold mb-1">Gols</p>
+                        <p className="font-black text-brand-primary">{e.gols}</p>
+                      </div>
+                      <div className="text-center w-12">
+                        <p className="text-[10px] text-brand-muted uppercase font-bold mb-1">Ass.</p>
+                        <p className="font-black text-blue-500">{e.assistencias}</p>
+                      </div>
+                      <div className="text-center w-12">
+                        <p className="text-[10px] text-brand-muted uppercase font-bold mb-1">C.A</p>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <div className="w-2 h-3 bg-yellow-500 rounded-sm"></div>
+                          <p className="font-black text-yellow-500">{e.cartaoAmarelo}</p>
                         </div>
-                      )}
-                      {e.cartaoVermelho > 0 && (
-                        <div className="flex items-center gap-1 text-[10px] font-bold text-red-500">
-                           <div className="w-2 h-3 bg-red-500 rounded-sm"></div> {e.cartaoVermelho}
+                      </div>
+                      <div className="text-center w-12">
+                        <p className="text-[10px] text-brand-muted uppercase font-bold mb-1">C.V</p>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <div className="w-2 h-3 bg-red-500 rounded-sm"></div>
+                          <p className="font-black text-red-500">{e.cartaoVermelho}</p>
                         </div>
-                      )}
+                      </div>
                     </div>
                     <div className="ml-4 text-brand-muted">
-                      {isExpanded ? <ChevronUp /> : <ChevronDown />}
+                      {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                     </div>
                   </div>
                 </div>
@@ -238,11 +242,27 @@ export default function EstatisticasAtletas() {
                     <h4 className="text-xs font-bold text-brand-muted uppercase tracking-widest mb-4">Histórico por Clube</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {e.historico.map((h, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 bg-brand-card rounded-lg border border-brand-border/50">
-                          <span className="font-bold text-sm text-white">{h.clube}</span>
-                          <div className="flex gap-4">
-                            <span className="text-xs font-bold text-brand-primary">{h.gols} Gols</span>
-                            <span className="text-xs font-bold text-blue-500">{h.assistencias} Ass.</span>
+                        <div key={i} className="p-4 bg-brand-card rounded-lg border border-brand-border/50">
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="font-bold text-white uppercase tracking-tighter">{h.clube}</span>
+                          </div>
+                          <div className="grid grid-cols-4 gap-2">
+                            <div className="text-center">
+                              <p className="text-[9px] text-brand-muted uppercase font-bold">Gols</p>
+                              <p className="text-sm font-black text-brand-primary">{h.gols}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[9px] text-brand-muted uppercase font-bold">Ass.</p>
+                              <p className="text-sm font-black text-blue-500">{h.assistencias}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[9px] text-brand-muted uppercase font-bold">C.A</p>
+                              <p className="text-sm font-black text-yellow-500">{h.cartaoAmarelo}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[9px] text-brand-muted uppercase font-bold">C.V</p>
+                              <p className="text-sm font-black text-red-500">{h.cartaoVermelho}</p>
+                            </div>
                           </div>
                         </div>
                       ))}

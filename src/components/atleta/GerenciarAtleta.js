@@ -340,30 +340,30 @@ export default function GerenciarAtleta() {
                       <tr>
                         <td colSpan="3" className="px-4 py-0">
                           <div className="bg-brand-dark/50 border-x border-brand-border p-6 animate-in slide-in-from-top-2 duration-300">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
                               {[
-                                { label: 'Gols', field: 'gols' },
-                                { label: 'Assistências', field: 'assistencias' },
-                                { label: 'C. Amarelo', field: 'cartaoAmarelo', isYellow: true },
-                                { label: 'C. Vermelho', field: 'cartaoVermelho', isRed: true },
+                                { label: 'Gols', field: 'gols', color: 'text-brand-primary' },
+                                { label: 'Assistências', field: 'assistencias', color: 'text-blue-500' },
+                                { label: 'C. Amarelo', field: 'cartaoAmarelo', isYellow: true, color: 'text-yellow-500' },
+                                { label: 'C. Vermelho', field: 'cartaoVermelho', isRed: true, color: 'text-red-500' },
                               ].map((stat) => (
-                                <div key={stat.field} className="text-center p-4 bg-brand-card rounded-xl border border-brand-border relative overflow-hidden group">
-                                  {stat.isYellow && <div className="absolute top-0 right-0 w-1 h-full bg-yellow-400"></div>}
-                                  {stat.isRed && <div className="absolute top-0 right-0 w-1 h-full bg-red-600"></div>}
-                                  <p className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-2">{stat.label}</p>
-                                  <div className="flex items-center justify-center gap-4 mt-1">
+                                <div key={stat.field} className="text-center p-3 bg-brand-card rounded-xl border border-brand-border relative overflow-hidden group">
+                                  {stat.isYellow && <div className="absolute top-0 right-0 w-1 h-full bg-yellow-500"></div>}
+                                  {stat.isRed && <div className="absolute top-0 right-0 w-1 h-full bg-red-500"></div>}
+                                  <p className="text-[10px] font-bold text-brand-muted uppercase tracking-wider mb-2">{stat.label}</p>
+                                  <div className="flex items-center justify-center gap-3 mt-1">
                                     <button 
                                       onClick={() => handleIncrementarEstatistica(a.atletaId, stat.field, -1)}
-                                      className="p-1 rounded bg-brand-dark hover:bg-brand-border text-white transition-colors"
+                                      className="p-1.5 rounded-lg bg-brand-dark hover:bg-brand-border text-white transition-colors"
                                     >
-                                      <Minus className="w-3 h-3" />
+                                      <Minus className="w-3.5 h-3.5" />
                                     </button>
-                                    <span className="text-2xl font-black text-white w-8">{dadosEstatistica[a.atletaId]?.[stat.field] ?? 0}</span>
+                                    <span className={`text-xl font-black w-8 text-center ${stat.color}`}>{dadosEstatistica[a.atletaId]?.[stat.field] ?? 0}</span>
                                     <button 
                                       onClick={() => handleIncrementarEstatistica(a.atletaId, stat.field, 1)}
-                                      className="p-1 rounded bg-brand-primary/20 hover:bg-brand-primary/40 text-brand-primary transition-colors"
+                                      className="p-1.5 rounded-lg bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary transition-colors"
                                     >
-                                      <Plus className="w-3 h-3" />
+                                      <Plus className="w-3.5 h-3.5" />
                                     </button>
                                   </div>
                                 </div>
