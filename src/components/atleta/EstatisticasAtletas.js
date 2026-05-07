@@ -1,17 +1,20 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useNavigate, useOutletContext } from 'react-router-dom';
-import { FaFutbol, FaRunning } from 'react-icons/fa';
-import BotaoVoltar from '../BotaoVoltar';
+import { useNavigate } from 'react-router-dom';
+import { TrendingUp, Award, ChevronDown, ChevronUp, Filter, Target, Zap, BarChart2 } from 'lucide-react';
+import Card from '../ui/Card';
+import Button from '../ui/Button';
+import { Select } from '../ui/Input';
+import Badge from '../ui/Badge';
 
 export default function EstatisticasAtletas() {
   const [estatisticas, setEstatisticas] = useState([]);
   const [atletas, setAtletas] = useState([]);
   const [mensagem, setMensagem] = useState('');
   const [erro, setErro] = useState(false);
-  const [ordenarPor, setOrdenarPor] = useState('nome');
+  const [ordenarPor, setOrdenarPor] = useState('gols');
   const [expandedAtleta, setExpandedAtleta] = useState(null);
-  const { fecharBarra } = useOutletContext();
+  const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
 
@@ -20,40 +23,37 @@ export default function EstatisticasAtletas() {
   }, []);
 
   const buscarDados = async () => {
+    setLoading(true);
     try {
       const [resEstatisticas, resAtletas] = await Promise.all([
         axios.get('http://localhost:8080/api/estatistica'),
         axios.get('http://localhost:8080/api/atleta'),
       ]);
-      setEstatisticas(resEstatisticas.data);
-      setAtletas(resAtletas.data);
+      setEstatisticas(Array.isArray(resEstatisticas.data) ? resEstatisticas.data : []);
+      setAtletas(Array.isArray(resAtletas.data) ? resAtletas.data : []);
     } catch (err) {
       setMensagem('Erro ao buscar dados.');
       setErro(true);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleVoltar = () => {
-    fecharBarra(null);
-    navigate('/');
-  };
-
-  // Mapa para clube atual por chave combinada atletaId + nomeAtleta
   const clubeAtualPorId = atletas.reduce((acc, atleta) => {
+    if (!atleta) return acc;
     const chave = `${atleta.atletaId}-${atleta.nome}`;
     acc[chave] = atleta.clubeNome || 'Sem clube atual';
     return acc;
   }, {});
 
-  // Agrupa estatísticas por atletaId + nomeAtleta para evitar confusão com nomes iguais
-  // Mantém o histórico na ordem original do backend (sem ordenar)
   const estatisticasPorAtleta = estatisticas.reduce((acc, stat) => {
+    if (!stat) return acc;
     const chave = `${stat.atletaId}-${stat.nomeAtleta}`;
 
     if (!acc[chave]) {
       acc[chave] = {
         id: stat.atletaId,
-        nome: stat.nomeAtleta,
+        nome: stat.nomeAtleta || 'Sem Nome',
         gols: 0,
         assistencias: 0,
         cartaoAmarelo: 0,
@@ -69,12 +69,11 @@ export default function EstatisticasAtletas() {
     acc[chave].cartaoVermelho += stat.cartaoVermelho || 0;
 
     acc[chave].historico.push({
-      clube: stat.nomeClube,
+      clube: stat.nomeClube || 'Desconhecido',
       gols: stat.gols || 0,
       assistencias: stat.assistencias || 0,
       cartaoAmarelo: stat.cartaoAmarelo || 0,
       cartaoVermelho: stat.cartaoVermelho || 0,
-      dataInicio: stat.dataInicio, // só para referência futura
     });
 
     return acc;
@@ -82,207 +81,179 @@ export default function EstatisticasAtletas() {
 
   const atletasArray = Object.values(estatisticasPorAtleta);
 
-  const atletasOrdenados = atletasArray.sort((a, b) => {
-    if (ordenarPor === 'nome') {
-      return a.nome.localeCompare(b.nome);
-    } else if (ordenarPor === 'gols') {
-      return b.gols - a.gols;
-    } else if (ordenarPor === 'assistencias') {
-      return b.assistencias - a.assistencias;
-    }
-    return 0;
+  const atletasOrdenados = [...atletasArray].sort((a, b) => {
+    if (ordenarPor === 'nome') return (a.nome || '').localeCompare(b.nome || '');
+    return (b[ordenarPor] || 0) - (a[ordenarPor] || 0);
   });
 
-  const rankingGols = atletasArray
-    .slice()
-    .sort((a, b) => b.gols - a.gols)
-    .slice(0, 3);
-
-  const rankingAssistencias = atletasArray
-    .slice()
-    .sort((a, b) => b.assistencias - a.assistencias)
-    .slice(0, 3);
+  const rankingGols = [...atletasArray].sort((a, b) => b.gols - a.gols).slice(0, 3);
+  const rankingAssistencias = [...atletasArray].sort((a, b) => b.assistencias - a.assistencias).slice(0, 3);
 
   const toggleExpandir = (chave) => {
     setExpandedAtleta(expandedAtleta === chave ? null : chave);
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="form-card estatisticas-atletas-container">
-
-      <div className="flex items-center mb-6">
-
-        <BotaoVoltar onClick={handleVoltar} />
-
-        <h2 className="form-title">
-          Estatísticas dos Atletas
-        </h2>
-      </div>
-
-      {mensagem && (
-        <div className={`mensagem ${erro ? 'erro' : 'sucesso'} mb-6`}>
-          {mensagem}
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Estatísticas Gerais</h2>
+          <p className="text-brand-muted text-sm">Rankings e histórico de desempenho dos atletas.</p>
         </div>
-      )}
-
-      <div className="mb-6">
-        <label className="text-white font-semibold">
-          Ordenar por:&nbsp;
-          <select
-            value={ordenarPor}
-            onChange={(e) => setOrdenarPor(e.target.value)}
-            className="filtro-select"
-          >
-            <option value="nome">Nome</option>
-            <option value="gols">Gols</option>
-            <option value="assistencias">Assistências</option>
-          </select>
-        </label>
       </div>
 
-      <ul className="space-y-4">
-        {atletasOrdenados.length > 0 ? (
-          atletasOrdenados.map((e) => {
+      {/* Top Rankings Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <Card title="Top Goleadores" subtitle="Maiores marcadores da temporada">
+          <div className="space-y-4">
+            {rankingGols.map((a, i) => (
+              <div key={i} className="flex items-center justify-between p-3 bg-brand-dark rounded-lg border border-brand-border group hover:border-brand-primary/30 transition-all">
+                <div className="flex items-center gap-4">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                    i === 0 ? 'bg-yellow-500 text-brand-dark' : i === 1 ? 'bg-gray-300 text-brand-dark' : 'bg-amber-600 text-brand-dark'
+                  }`}>
+                    {i + 1}
+                  </div>
+                  <div>
+                    <p className="font-bold text-white">{a.nome}</p>
+                    <p className="text-xs text-brand-muted">{a.clube}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-brand-primary font-black text-xl">
+                  {a.gols} <Target className="w-4 h-4 opacity-50" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card title="Top Assistentes" subtitle="Maiores garçons da temporada">
+          <div className="space-y-4">
+            {rankingAssistencias.map((a, i) => (
+              <div key={i} className="flex items-center justify-between p-3 bg-brand-dark rounded-lg border border-brand-border group hover:border-brand-primary/30 transition-all">
+                <div className="flex items-center gap-4">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                    i === 0 ? 'bg-yellow-500 text-brand-dark' : i === 1 ? 'bg-gray-300 text-brand-dark' : 'bg-amber-600 text-brand-dark'
+                  }`}>
+                    {i + 1}
+                  </div>
+                  <div>
+                    <p className="font-bold text-white">{a.nome}</p>
+                    <p className="text-xs text-brand-muted">{a.clube}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-blue-500 font-black text-xl">
+                  {a.assistencias} <Zap className="w-4 h-4 opacity-50" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Main Ranking Table */}
+      <Card>
+        <div className="flex flex-col md:flex-row gap-4 mb-8 items-end justify-between border-b border-brand-border pb-6">
+          <div className="w-full md:w-64">
+            <Select
+              label="Ordenar Ranking"
+              value={ordenarPor}
+              onChange={(e) => setOrdenarPor(e.target.value)}
+              options={[
+                { value: 'gols', label: 'Mais Gols' },
+                { value: 'assistencias', label: 'Mais Assistências' },
+                { value: 'nome', label: 'Ordem Alfabética' },
+              ]}
+            />
+          </div>
+          <div className="flex gap-4">
+            <div className="text-center px-4">
+              <p className="text-[10px] text-brand-muted uppercase font-bold tracking-tighter">Total Gols</p>
+              <p className="text-xl font-black text-white">{atletasArray.reduce((acc, curr) => acc + curr.gols, 0)}</p>
+            </div>
+            <div className="text-center px-4 border-l border-brand-border">
+              <p className="text-[10px] text-brand-muted uppercase font-bold tracking-tighter">Total Assist.</p>
+              <p className="text-xl font-black text-white">{atletasArray.reduce((acc, curr) => acc + curr.assistencias, 0)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {atletasOrdenados.map((e) => {
             const chave = `${e.id}-${e.nome}`;
+            const isExpanded = expandedAtleta === chave;
             return (
-              <li
-                key={chave}
-                className="bg-primaryPurple rounded-lg p-4 shadow-md cursor-pointer"
-                onClick={() => toggleExpandir(chave)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(ev) => {
-                  if (ev.key === 'Enter' || ev.key === ' ') toggleExpandir(chave);
-                }}
-              >
-                <div className="grid grid-cols-[1.5fr_2fr_1fr_1fr] gap-4 items-center">
-                  <span
-                    className="text-white font-semibold truncate"
-                    title={e.nome}
-                  >
-                    {e.nome}
-                  </span>
-
-                  <span
-                    className="text-white truncate"
-                    title={e.clube}
-                  >
-                    <strong>Clube Atual: </strong> {e.clube}
-                  </span>
-
-                  {/* Ajuste principal: forçar o bloco de estatísticas para a coluna mais à direita */}
-                  <div className="flex items-end gap-6 justify-end text-white font-semibold ml-auto col-start-4 justify-self-end">
-                    {/* Coluna Gols + Amarelo */}
-                    <div className="flex flex-col items-center">
-                      <span className="flex items-center gap-1">
-                        <FaFutbol className="text-green-400" />
-                        {e.gols}
-                      </span>
-                      <span className="flex items-center gap-1 text-yellow-300 text-xs mt-1">
-                        {e.cartaoAmarelo}
-                        <span
-                          className="w-3 h-4 rounded-sm border border-yellow-400 bg-yellow-300"
-                          title="Cartões Amarelos"
-                        />
-                      </span>
+              <div key={chave} className="border border-brand-border rounded-xl overflow-hidden group transition-all hover:border-brand-primary/50">
+                <div 
+                  className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${isExpanded ? 'bg-brand-dark/50' : 'hover:bg-brand-dark/30'}`}
+                  onClick={() => toggleExpandir(chave)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-brand-border flex items-center justify-center text-sm font-bold text-white uppercase border border-brand-border">
+                      {(e.nome || '?').charAt(0)}
                     </div>
-
-                    {/* Coluna Assistências + Vermelho */}
-                    <div className="flex flex-col items-center">
-                      <span className="flex items-center gap-1">
-                        <FaRunning className="text-green-400" />
-                        {e.assistencias}
-                      </span>
-                      <span className="flex items-center gap-1 text-red-500 text-xs mt-1">
-                        {e.cartaoVermelho}
-                        <span
-                          className="w-3 h-4 rounded-sm border border-red-500 bg-red-500"
-                          title="Cartões Vermelhos"
-                        />
-                      </span>
+                    <div>
+                      <p className="font-bold text-white group-hover:text-brand-primary transition-colors">{e.nome}</p>
+                      <p className="text-xs text-brand-muted">{e.clube}</p>
                     </div>
                   </div>
 
+                  <div className="flex items-center gap-8">
+                    <div className="text-center w-12">
+                      <p className="text-[10px] text-brand-muted uppercase font-bold">Gols</p>
+                      <p className="font-black text-brand-primary">{e.gols}</p>
+                    </div>
+                    <div className="text-center w-12">
+                      <p className="text-[10px] text-brand-muted uppercase font-bold">Ass.</p>
+                      <p className="font-black text-blue-500">{e.assistencias}</p>
+                    </div>
+                    <div className="flex gap-1 items-center ml-4">
+                      {e.cartaoAmarelo > 0 && (
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-yellow-500">
+                           <div className="w-2 h-3 bg-yellow-500 rounded-sm"></div> {e.cartaoAmarelo}
+                        </div>
+                      )}
+                      {e.cartaoVermelho > 0 && (
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-red-500">
+                           <div className="w-2 h-3 bg-red-500 rounded-sm"></div> {e.cartaoVermelho}
+                        </div>
+                      )}
+                    </div>
+                    <div className="ml-4 text-brand-muted">
+                      {isExpanded ? <ChevronUp /> : <ChevronDown />}
+                    </div>
+                  </div>
                 </div>
 
-                {expandedAtleta === chave && (
-                  <div className="mt-4 bg-primaryGreen bg-opacity-20 rounded-md p-3 text-white max-h-56 overflow-y-auto">
-                    <h4 className="font-semibold mb-2">Histórico por clube:</h4>
-                    <ul className="list-disc list-inside space-y-1">
+                {isExpanded && (
+                  <div className="p-4 bg-brand-dark/80 border-t border-brand-border animate-in slide-in-from-top-2 duration-300">
+                    <h4 className="text-xs font-bold text-brand-muted uppercase tracking-widest mb-4">Histórico por Clube</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {e.historico.map((h, i) => (
-                        <li
-                          key={i}
-                          className="truncate"
-                          title={`${h.clube}: ${h.gols} gols, ${h.assistencias} assistências${h.cartaoAmarelo ? `, ${h.cartaoAmarelo} amarelos` : ''}${h.cartaoVermelho ? `, ${h.cartaoVermelho} vermelhos` : ''}`}
-                        >
-                          <strong>{h.clube}</strong> — {h.gols} gol
-                          {h.gols !== 1 ? 's' : ''}, {h.assistencias} assistência
-                          {h.assistencias !== 1 ? 's' : ''}
-
-                          {/* Substituí os emojis por spans com as mesmas classes visuais dos cartões */}
-                          {h.cartaoAmarelo ? (
-                            <span className="ml-1 inline-flex items-center gap-1 text-yellow-300 text-xs" title="Cartões Amarelos">
-                              , {h.cartaoAmarelo}
-                              <span className="w-3 h-4 rounded-sm border border-yellow-400 bg-yellow-300 inline-block" />
-                            </span>
-                          ) : null}
-
-                          {h.cartaoVermelho ? (
-                            <span className="ml-1 inline-flex items-center gap-1 text-red-500 text-xs" title="Cartões Vermelhos">
-                              , {h.cartaoVermelho}
-                              <span className="w-3 h-4 rounded-sm border border-red-500 bg-red-500 inline-block" />
-                            </span>
-                          ) : null}
-
-                        </li>
+                        <div key={i} className="flex items-center justify-between p-3 bg-brand-card rounded-lg border border-brand-border/50">
+                          <span className="font-bold text-sm text-white">{h.clube}</span>
+                          <div className="flex gap-4">
+                            <span className="text-xs font-bold text-brand-primary">{h.gols} Gols</span>
+                            <span className="text-xs font-bold text-blue-500">{h.assistencias} Ass.</span>
+                          </div>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
-              </li>
+              </div>
             );
-          })
-        ) : (
-          <li className="text-white">Nenhuma estatística encontrada.</li>
-        )}
-      </ul>
-
-      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div className="bg-primaryPurple rounded-lg p-4 shadow-md">
-          <h3 className="text-white font-bold mb-4 text-center">
-            Top 3 Goleadores
-          </h3>
-          <ol className="list-decimal list-inside text-white space-y-1">
-            {rankingGols.map((a, i) => (
-              <li
-                key={i}
-                className="truncate"
-                title={`${a.nome}: ${a.gols} gol${a.gols !== 1 ? 's' : ''}`}
-              >
-                <strong>{a.nome}</strong> — {a.gols} gol{a.gols !== 1 ? 's' : ''}
-              </li>
-            ))}
-          </ol>
+          })}
         </div>
-
-        <div className="bg-primaryPurple rounded-lg p-4 shadow-md">
-          <h3 className="text-white font-bold mb-4 text-center">
-            Top 3 Assistentes
-          </h3>
-          <ol className="list-decimal list-inside text-white space-y-1">
-            {rankingAssistencias.map((a, i) => (
-              <li
-                key={i}
-                className="truncate"
-                title={`${a.nome}: ${a.assistencias} assistência${a.assistencias !== 1 ? 's' : ''}`}
-              >
-                <strong>{a.nome}</strong> — {a.assistencias} assistência
-                {a.assistencias !== 1 ? 's' : ''}
-              </li>
-            ))}
-          </ol>
-        </div>
-      </div>
+      </Card>
     </div>
   );
 }

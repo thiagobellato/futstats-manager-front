@@ -1,4 +1,4 @@
-import { FiArrowLeft } from 'react-icons/fi';
+import { ArrowLeft } from 'lucide-react';
 
 export default function BotaoVoltar({ onClick, size = 24 }) {
     return (
@@ -7,9 +7,9 @@ export default function BotaoVoltar({ onClick, size = 24 }) {
             onClick={onClick}
             title="Voltar para Menu Principal"
             aria-label="Voltar para Menu Principal"
-            className="back-button"
+            className="p-2 hover:bg-brand-card rounded-full transition-colors text-brand-primary"
         >
-            <FiArrowLeft size={size} />
+            <ArrowLeft size={size} />
         </button>
     );
 }

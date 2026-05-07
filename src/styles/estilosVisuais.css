@@ -2,109 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer utilities {
-
-  .form-input {
-    @apply w-full mb-4 px-4 py-2 rounded-lg border border-purple-700 bg-primaryPurple text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-primaryGreen;
-  }
-
-  .form-background {
-    @apply bg-gradient-to-r from-primaryPurple to-primaryGreen min-h-screen flex justify-center items-center p-6;
-  }
-
-  .form-container {
-    @apply max-w-xl bg-gradient-to-r rounded-2xl shadow-lg p-8;
-  }
-
-  .form-title {
-    @apply text-white text-2xl font-bold px-2 py-2 rounded-lg transition leading-none h-12 flex items-center;
-  }
-
-  .form-button {
-    @apply w-full bg-primaryGreen hover:bg-lightGreen text-white font-semibold py-3 rounded-lg transition;
-  }
-
-  .back-button {
-    @apply inline-flex items-center text-white font-semibold px-2 py-2 rounded-lg hover:bg-lightGreen transition;
-  }
-
-  /* Container geral */
-  .form-card {
-    @apply max-w-4xl mx-auto p-6 bg-gradient-to-r from-primaryPurple to-primaryGreen rounded-2xl shadow-lg text-white min-h-screen;
-  }
-
-  /* Inputs e selects dos filtros */
-  .filtro-input,
-  .filtro-select {
-    @apply px-3 py-2 rounded-md border border-purple-700 bg-primaryPurple text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-primaryGreen;
-  }
-
-  /* Botões de ação (editar, deletar, estatísticas, transferir) */
-  .acoes button {
-    @apply mx-1 px-3 py-1 rounded-md bg-primaryGreen hover:bg-lightGreen text-white transition;
-  }
-
-  /* Mensagem */
-  .mensagem {
-    @apply p-3 rounded-md font-semibold text-center;
-  }
-
-  .erro {
-    @apply bg-customError text-white;
-  }
-
-  .sucesso {
-    @apply bg-customSuccess text-white;
-  }
-
-  /* Lista atletas */
-  .lista-clubes {
-    @apply mt-4 space-y-3;
-  }
-
-  .item-clube {
-    @apply bg-primaryPurple rounded-lg p-4 flex justify-between items-center shadow-md;
-  }
-
-  .item-clube.piscar-alerta {
-    @apply animate-pulse border-2 border-yellow-400;
-  }
-
-  /* Painel de estatísticas */
-  .estatisticas-panel {
-    @apply mt-2 bg-primaryPurple rounded-md p-3 text-white;
-  }
-
-  .estatistica-linha {
-    @apply flex items-center space-x-2 mb-2;
-  }
-
-  .botao-estatistica {
-    @apply bg-primaryGreen text-white rounded px-2 py-1 font-bold hover:bg-lightGreen transition disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-
-  .campo-estatistica {
-    @apply w-8 text-center font-mono;
-  }
-
-  .label-estatistica {
-    @apply ml-2 font-semibold;
-  }
-
-  @layer utilities {
-  .cartao {
-    @apply inline-block w-5 h-7 rounded-sm shadow-md;
-  }
-
-  .cartao-amarelo {
-    @apply bg-yellow-400 border border-yellow-600;
-  }
-
-  .cartao-vermelho {
-    @apply bg-red-600 border border-red-800;
+@layer base {
+  body {
+    @apply bg-brand-dark text-white antialiased;
   }
 }
 
-
-
+@layer components {
+  .custom-scrollbar::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-brand-border rounded-full hover:bg-brand-muted/50 transition-colors;
+  }
 }

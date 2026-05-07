@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import TransferirAtletaPanel from './TransferirAtletaPanel';
-import { FiEdit2, FiTrash2, FiBarChart2, FiRepeat } from 'react-icons/fi';
-import { AiOutlineSortAscending, AiOutlinePlus, AiOutlineMinus } from 'react-icons/ai';
-import { GiPuzzle } from 'react-icons/gi';
-import BotaoVoltar from '../BotaoVoltar';
+import { Edit2, Trash2, BarChart2, Repeat, Filter, Plus, Minus, ChevronDown, ChevronUp } from 'lucide-react';
+import Card from '../ui/Card';
+import Button from '../ui/Button';
+import { Input, Select } from '../ui/Input';
+import Badge from '../ui/Badge';
 
 export default function GerenciarAtleta() {
-  const { fecharBarra } = useOutletContext();
   const [atletas, setAtletas] = useState([]);
   const [posicoes, setPosicoes] = useState([]);
   const [mensagem, setMensagem] = useState('');
@@ -23,6 +23,7 @@ export default function GerenciarAtleta() {
   const [filtroPosicao, setFiltroPosicao] = useState('');
   const [filtroClube, setFiltroClube] = useState('');
   const [atletaParaTransferirId, setAtletaParaTransferirId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
 
@@ -32,41 +33,41 @@ export default function GerenciarAtleta() {
   }, []);
 
   const buscarAtletas = async () => {
+    setLoading(true);
     try {
       const resposta = await axios.get('http://localhost:8080/api/atleta');
-      setAtletas(resposta.data);
+      setAtletas(Array.isArray(resposta.data) ? resposta.data : []);
     } catch (err) {
       setMensagem('Erro ao buscar atletas.');
       setErro(true);
+    } finally {
+      setLoading(false);
     }
   };
 
   const buscarPosicoes = async () => {
     try {
       const resposta = await axios.get('http://localhost:8080/api/enums/posicoes');
-      setPosicoes(resposta.data);
+      setPosicoes(Array.isArray(resposta.data) ? resposta.data : []);
     } catch (err) {
       console.error('Erro ao buscar posições:', err);
     }
   };
 
   const deletarAtleta = async (atleta) => {
+    if (!atleta) return;
     const confirmacao = window.confirm(
-      `Tem certeza que deseja deletar o atleta "${atleta.nome} ${atleta.sobrenome}"?`
+      `Tem certeza que deseja deletar o atleta "${atleta.nome || ''} ${atleta.sobrenome || ''}"?`
     );
-    if (!confirmacao) {
-      setMensagem(`Operação cancelada para "${atleta.nome}".`);
-      setErro(false);
-      return;
-    }
+    if (!confirmacao) return;
 
     try {
       await axios.delete(`http://localhost:8080/api/atleta/deletar/${atleta.atletaId}`);
-      setMensagem(`Atleta "${atleta.nome}" deletado com sucesso!`);
+      setMensagem(`Atleta "${atleta.nome || 'selecionado'}" deletado com sucesso!`);
       setErro(false);
       buscarAtletas();
     } catch (err) {
-      setMensagem(`Erro ao deletar o atleta "${atleta.nome}".`);
+      setMensagem(`Erro ao deletar o atleta.`);
       setErro(true);
     }
   };
@@ -76,18 +77,25 @@ export default function GerenciarAtleta() {
   };
 
   const atletaIncompleto = (atleta) => {
+    if (!atleta) return true;
     return !atleta.posicao || !atleta.clubeNome || atleta.clubeNome === 'Sem Clube';
   };
 
   const toggleEstatisticas = (atleta) => {
+    if (!atleta) return;
     const atletaId = atleta.atletaId;
     const clubeId = atleta.clube?.clubeId ?? atleta.clubeId;
 
-    // Fecha painel de transferência ao abrir estatísticas
     setAtletaParaTransferirId(null);
 
     if (estatisticaAberta === atletaId) {
       setEstatisticaAberta(null);
+      return;
+    }
+
+    if (!clubeId) {
+      setMensagem('Atleta sem clube vinculado.');
+      setErro(true);
       return;
     }
 
@@ -96,9 +104,8 @@ export default function GerenciarAtleta() {
       .then((res) => {
         const estat = res.data;
         if (!estat) {
-          setMensagem('Nenhuma estatística encontrada para esse atleta.');
+          setMensagem('Nenhuma estatística encontrada.');
           setErro(false);
-          setEstatisticaAberta(null);
           return;
         }
 
@@ -107,26 +114,16 @@ export default function GerenciarAtleta() {
           [atletaId]: {
             gols: estat.gols ?? 0,
             assistencias: estat.assistencias ?? 0,
-            cartaoAmarelo: estat.cartaoAmarelo ?? 0, // ADICIONE ESTA LINHA
+            cartaoAmarelo: estat.cartaoAmarelo ?? 0,
             cartaoVermelho: estat.cartaoVermelho ?? 0,
           },
         }));
 
-        setMensagem('Estatísticas carregadas com sucesso.');
-        setErro(false);
         setEstatisticaAberta(atletaId);
       })
       .catch((err) => {
-        if (err.response?.status === 404 || err.response?.data === '') {
-          setMensagem('Nenhuma estatística encontrada para esse atleta.');
-          setErro(false);
-          setEstatisticaAberta(null);
-        } else {
-          const msgErro = err.response?.data?.message || err.message || 'Erro desconhecido';
-          setMensagem(`Erro ao carregar estatísticas do atleta: ${msgErro}`);
-          setErro(true);
-          setEstatisticaAberta(null);
-        }
+        setMensagem('Erro ao carregar estatísticas.');
+        setErro(true);
       });
   };
 
@@ -143,7 +140,6 @@ export default function GerenciarAtleta() {
     };
 
     setDadosEstatistica(novosDados);
-
     salvarEstatisticasComValores(atletaId, novosDados[atletaId]);
   };
 
@@ -151,11 +147,7 @@ export default function GerenciarAtleta() {
     const atleta = atletas.find((a) => a.atletaId === atletaId);
     const clubeId = atleta?.clube?.clubeId ?? atleta?.clubeId;
 
-    if (!clubeId) {
-      setMensagem('Esse atleta não está vinculado a nenhum clube.');
-      setErro(true);
-      return;
-    }
+    if (!clubeId) return;
 
     const dadosParaEnviar = {
       atletaId,
@@ -164,44 +156,33 @@ export default function GerenciarAtleta() {
       assistencias: valores?.assistencias ?? 0,
       cartaoAmarelo: valores?.cartaoAmarelo ?? 0,
       cartaoVermelho: valores?.cartaoVermelho ?? 0,
-
     };
 
     try {
-      await axios.put('http://localhost:8080/api/estatistica/atualizar', dadosParaEnviar, {
-        headers: { 'Content-Type': 'application/json' },
-      });
-      setMensagem('Estatísticas atualizadas com sucesso.');
-      setErro(false);
+      await axios.put('http://localhost:8080/api/estatistica/atualizar', dadosParaEnviar);
     } catch (err) {
-      const msgErroBackend = err.response?.data?.message || err.message || 'Erro desconhecido';
-      setMensagem(`Erro ao atualizar estatísticas: ${msgErroBackend}`);
+      setMensagem('Erro ao atualizar estatísticas.');
       setErro(true);
     }
   };
 
   const toggleTransferirPanel = (atletaId) => {
-    // Fecha painel de estatística ao abrir transferência
     setEstatisticaAberta(null);
-
-    if (atletaParaTransferirId === atletaId) {
-      setAtletaParaTransferirId(null);
-    } else {
-      setAtletaParaTransferirId(atletaId);
-    }
+    setAtletaParaTransferirId(atletaParaTransferirId === atletaId ? null : atletaId);
   };
 
-  const fecharTransferirPanel = () => setAtletaParaTransferirId(null);
+  const handleTransferenciaFeita = (msg, isErro) => {
+    setMensagem(msg);
+    setErro(isErro);
+    if (!isErro) buscarAtletas();
+  };
 
-  const nacionalidadesUnicas = [...new Set(atletas.map((a) => a.nacionalidade))];
-  const clubesUnicos = [...new Set(atletas.map((a) => a.clubeNome))];
+  const nacionalidadesUnicas = [...new Set(atletas.map((a) => a.nacionalidade).filter(Boolean))];
+  const clubesUnicos = [...new Set(atletas.map((a) => a.clubeNome).filter(Boolean))];
 
   let atletasFiltrados = atletas.filter((a) => {
-    const buscaNome = filtroNome
-      ? (a.nome ?? '').toLowerCase().startsWith(filtroNome.toLowerCase()) ||
-      (a.sobrenome ?? '').toLowerCase().startsWith(filtroNome.toLowerCase())
-      : true;
-
+    const buscaNome = (a.nome ?? '').toLowerCase().includes(filtroNome.toLowerCase()) ||
+                    (a.sobrenome ?? '').toLowerCase().includes(filtroNome.toLowerCase());
     const buscaNacionalidade = filtroNacionalidade ? a.nacionalidade === filtroNacionalidade : true;
     const buscaPosicao = filtroPosicao ? a.posicao === filtroPosicao : true;
     const buscaClube = filtroClube ? a.clubeNome === filtroClube : true;
@@ -217,619 +198,205 @@ export default function GerenciarAtleta() {
     });
   } else {
     atletasFiltrados = [...atletasFiltrados].sort((a, b) => {
-      const nomeA = `${a.nome ?? ''} ${a.sobrenome ?? ''}`.toLowerCase().trim();
-      const nomeB = `${b.nome ?? ''} ${b.sobrenome ?? ''}`.toLowerCase().trim();
+      const nomeA = `${a.nome || ''} ${a.sobrenome || ''}`.toLowerCase();
+      const nomeB = `${b.nome || ''} ${b.sobrenome || ''}`.toLowerCase();
       return ordenarAsc ? nomeA.localeCompare(nomeB) : nomeB.localeCompare(nomeA);
     });
   }
 
-  const handleVoltar = () => {
-    fecharBarra(null);
-    navigate('/');
-  };
-
   return (
-    <div className="form-background">
-      <div className="form-card max-w-[650px] p-4 mx-auto">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Gerenciar Atletas</h2>
+          <p className="text-brand-muted text-sm">Visualize e administre todos os atletas do sistema.</p>
+        </div>
+        <Button onClick={() => navigate('/menu-atleta/cadastrar')} className="gap-2">
+          <Plus className="w-4 h-4" /> Novo Atleta
+        </Button>
+      </div>
 
-        <div className="flex items-center mb-6">
-          <BotaoVoltar onClick={handleVoltar} />
-          <h2 className="form-title">Gerenciar Atletas</h2>
+      {mensagem && (
+        <div className={`p-4 rounded-lg flex items-center justify-between animate-in slide-in-from-top duration-300 ${erro ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-brand-primary/10 text-brand-primary border border-brand-primary/20'}`}>
+          <span>{mensagem}</span>
+          <button onClick={() => setMensagem('')} className="text-sm font-bold opacity-50 hover:opacity-100">✕</button>
+        </div>
+      )}
+
+      <Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Input
+            label="Nome ou Sobrenome"
+            placeholder="Buscar..."
+            value={filtroNome}
+            onChange={(e) => setFiltroNome(e.target.value)}
+          />
+          <Select
+            label="Nacionalidade"
+            value={filtroNacionalidade}
+            onChange={(e) => setFiltroNacionalidade(e.target.value)}
+            options={[
+              { value: '', label: 'Todas' },
+              ...nacionalidadesUnicas.map(n => ({ value: n, label: n }))
+            ]}
+          />
+          <Select
+            label="Posição"
+            value={filtroPosicao}
+            onChange={(e) => setFiltroPosicao(e.target.value)}
+            options={[
+              { value: '', label: 'Todas' },
+              ...posicoes.map(p => ({ value: p.sigla, label: `[${p.sigla}] ${p.descricao || p.sigla}` }))
+            ]}
+          />
+          <Select
+            label="Clube"
+            value={filtroClube}
+            onChange={(e) => setFiltroClube(e.target.value)}
+            options={[
+              { value: '', label: 'Todos' },
+              ...clubesUnicos.map(c => ({ value: c, label: c }))
+            ]}
+          />
         </div>
 
-
-        {mensagem && (
-          <div
-            className={`mensagem ${erro ? 'erro' : 'sucesso'}`}
-            style={{
-              marginBottom: 12,
-              textAlign: 'center',
-              maxWidth: 480,
-              marginLeft: 'auto',
-              marginRight: 'auto',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              fontSize: '0.875rem',
-              lineHeight: 1.2,
-              padding: '0.25rem 0.5rem',
-              borderRadius: 6,
-            }}
-            title={mensagem}
+        <div className="flex gap-2 mb-6 pb-6 border-b border-brand-border">
+          <Button 
+            variant={!ordenarPorPosicao ? 'primary' : 'secondary'} 
+            size="sm" 
+            onClick={() => { setOrdenarPorPosicao(false); setOrdenarAsc(!ordenarAsc); }}
+            className="gap-2"
           >
-            {mensagem}
+            Nome {!ordenarPorPosicao && (ordenarAsc ? 'A-Z' : 'Z-A')}
+          </Button>
+          <Button 
+            variant={ordenarPorPosicao ? 'primary' : 'secondary'} 
+            size="sm" 
+            onClick={() => { setOrdenarPorPosicao(true); setOrdenarPosicaoAsc(!ordenarPosicaoAsc); }}
+            className="gap-2"
+          >
+            Posição {ordenarPorPosicao && (ordenarPosicaoAsc ? '↑' : '↓')}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => { setFiltroNome(''); setFiltroNacionalidade(''); setFiltroPosicao(''); setFiltroClube(''); }} className="ml-auto text-brand-muted">
+            Limpar Filtros
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-brand-border text-brand-muted text-xs uppercase tracking-wider">
+                  <th className="px-4 py-4 font-semibold">Atleta</th>
+                  <th className="px-4 py-4 font-semibold">Clube</th>
+                  <th className="px-4 py-4 font-semibold text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-brand-border">
+                {atletasFiltrados.map((a) => (
+                  <React.Fragment key={a.atletaId}>
+                    <tr className={`group transition-colors ${atletaIncompleto(a) ? 'bg-yellow-500/5' : 'hover:bg-brand-dark/30'}`}>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-brand-border flex items-center justify-center text-[10px] font-bold text-white uppercase">
+                            {a.nome?.charAt(0) || '?'}{a.sobrenome?.charAt(0) || ''}
+                          </div>
+                          <div>
+                            <div className="font-bold text-white group-hover:text-brand-primary transition-colors">
+                              {a.nome || 'Sem Nome'} {a.sobrenome || ''}
+                            </div>
+                            <div className="text-xs text-brand-muted flex items-center gap-2">
+                              <Badge variant="default" className="py-0">{a.posicao || '---'}</Badge>
+                              {atletaIncompleto(a) && <span className="text-yellow-500 text-[10px] uppercase font-bold">Incompleto</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-brand-muted text-sm">{a.clubeNome || 'Sem Clube'}</td>
+                      <td className="px-4 py-4 text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => toggleEstatisticas(a)} title="Estatísticas">
+                            <BarChart2 className={`w-4 h-4 ${estatisticaAberta === a.atletaId ? 'text-brand-primary' : ''}`} />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => toggleTransferirPanel(a.atletaId)} title="Transferir">
+                            <Repeat className={`w-4 h-4 ${atletaParaTransferirId === a.atletaId ? 'text-brand-primary' : ''}`} />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => irParaEditar(a.atletaId)} title="Editar">
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-500/10" onClick={() => deletarAtleta(a)} title="Deletar">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Expandable Stats Panel */}
+                    {estatisticaAberta === a.atletaId && (
+                      <tr>
+                        <td colSpan="3" className="px-4 py-0">
+                          <div className="bg-brand-dark/50 border-x border-brand-border p-6 animate-in slide-in-from-top-2 duration-300">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto">
+                              {[
+                                { label: 'Gols', field: 'gols' },
+                                { label: 'Assistências', field: 'assistencias' },
+                                { label: 'C. Amarelo', field: 'cartaoAmarelo', isYellow: true },
+                                { label: 'C. Vermelho', field: 'cartaoVermelho', isRed: true },
+                              ].map((stat) => (
+                                <div key={stat.field} className="text-center p-4 bg-brand-card rounded-xl border border-brand-border relative overflow-hidden group">
+                                  {stat.isYellow && <div className="absolute top-0 right-0 w-1 h-full bg-yellow-400"></div>}
+                                  {stat.isRed && <div className="absolute top-0 right-0 w-1 h-full bg-red-600"></div>}
+                                  <p className="text-xs font-bold text-brand-muted uppercase tracking-wider mb-2">{stat.label}</p>
+                                  <div className="flex items-center justify-center gap-4 mt-1">
+                                    <button 
+                                      onClick={() => handleIncrementarEstatistica(a.atletaId, stat.field, -1)}
+                                      className="p-1 rounded bg-brand-dark hover:bg-brand-border text-white transition-colors"
+                                    >
+                                      <Minus className="w-3 h-3" />
+                                    </button>
+                                    <span className="text-2xl font-black text-white w-8">{dadosEstatistica[a.atletaId]?.[stat.field] ?? 0}</span>
+                                    <button 
+                                      onClick={() => handleIncrementarEstatistica(a.atletaId, stat.field, 1)}
+                                      className="p-1 rounded bg-brand-primary/20 hover:bg-brand-primary/40 text-brand-primary transition-colors"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Expandable Transfer Panel */}
+                    {atletaParaTransferirId === a.atletaId && (
+                      <tr>
+                        <td colSpan="3" className="px-4 py-0">
+                          <div className="bg-brand-dark/50 border-x border-brand-border p-6 animate-in slide-in-from-top-2 duration-300">
+                            <div className="max-w-md mx-auto">
+                              <TransferirAtletaPanel 
+                                atleta={a} 
+                                onCancel={() => setAtletaParaTransferirId(null)}
+                                onTransferenciaFeita={handleTransferenciaFeita}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-
-        <div
-          className="grid gap-3 mb-5"
-          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}
-        >
-          <label className="flex flex-col text-white">
-            Nome/Sobrenome:
-            <input
-              type="text"
-              placeholder="Início do nome ou sobrenome"
-              value={filtroNome}
-              onChange={(e) => setFiltroNome(e.target.value)}
-              className="filtro-input mt-1"
-            />
-          </label>
-
-          <label className="flex flex-col text-white">
-            Nacionalidade:
-            <select
-              value={filtroNacionalidade}
-              onChange={(e) => setFiltroNacionalidade(e.target.value)}
-              className="filtro-select mt-1"
-            >
-              <option value="">Todas</option>
-              {nacionalidadesUnicas.map((nac) => (
-                <option key={nac} value={nac}>
-                  {nac}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="flex flex-col text-white">
-            Posição:
-            <select
-              value={filtroPosicao}
-              onChange={(e) => setFiltroPosicao(e.target.value)}
-              className="filtro-select mt-1"
-            >
-              <option value="">Todas</option>
-              {posicoes.map((p) => (
-                <option key={p.sigla} value={p.sigla}>
-                  [{p.sigla}] {p.descricao}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="flex flex-col text-white">
-            Clube:
-            <select
-              value={filtroClube}
-              onChange={(e) => setFiltroClube(e.target.value)}
-              className="filtro-select mt-1"
-            >
-              <option value="">Todos</option>
-              {clubesUnicos.map((clube) => (
-                <option key={clube} value={clube}>
-                  {clube}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="flex flex-wrap justify-center gap-3 mb-4">
-          <button
-            onClick={() => {
-              setOrdenarPorPosicao(false);
-              setOrdenarAsc((prev) => !prev);
-            }}
-            title="Ordenar por nome"
-            className={`border rounded px-3 py-1 min-w-[120px] flex items-center justify-center gap-2 font-semibold transition ${ordenarPorPosicao
-              ? 'border-purple-700 text-gray-400 cursor-default'
-              : 'border-purple-700 text-white hover:bg-lightGreen'
-              }`}
-          >
-            <AiOutlineSortAscending size={18} />
-            {ordenarAsc ? 'A → Z' : 'Z → A'}
-          </button>
-
-          <button
-            onClick={() => {
-              setOrdenarPorPosicao(true);
-              setOrdenarPosicaoAsc((prev) => !prev);
-            }}
-            title="Ordenar por posição"
-            className={`border rounded px-3 py-1 min-w-[120px] flex items-center justify-center gap-2 font-semibold transition ${ordenarPorPosicao
-              ? 'border-purple-700 text-white hover:bg-lightGreen'
-              : 'border-purple-700 text-gray-400 cursor-default'
-              }`}
-          >
-            <GiPuzzle size={18} />
-            {ordenarPosicaoAsc ? 'Posição ↑' : 'Posição ↓'}
-          </button>
-        </div>
-
-        <ul
-          className="lista-clubes"
-          style={{
-            paddingLeft: 0,
-            marginBottom: 0,
-            maxHeight: 400,
-            overflowY: 'auto',
-            scrollbarWidth: 'none', // Firefox
-            msOverflowStyle: 'none', // IE 10+
-          }}
-          onWheel={(e) => e.stopPropagation()}
-        >
-          {atletasFiltrados.length > 0 ? (
-            atletasFiltrados.map((a) => (
-              <li
-                key={a.atletaId}
-                className={`item-clube ${atletaIncompleto(a) ? 'piscar-alerta' : ''}`}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'flex-start',
-                  alignItems: 'stretch',
-                  padding: '0.5rem 0.75rem',
-                  borderBottom: '1px solid var(--secondaryPurple)',
-                  color: 'white',
-                  gap: 6,
-                  fontSize: 14,
-                }}
-                title={`${a.nome} ${a.sobrenome} (${a.posicao}) - ${a.nacionalidade}`}
-              >
-                {/* Linha principal com nome, posição, nacionalidade e botões */}
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: 10,
-                    flexWrap: 'nowrap',
-                  }}
-                >
-                  <span
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      overflow: 'hidden',
-                      whiteSpace: 'nowrap',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {a.nome} {a.sobrenome} ({a.posicao}) - {a.nacionalidade}
-                  </span>
-
-                  <div
-                    className="acoes"
-                    style={{
-                      display: 'flex',
-                      gap: '0.4rem',
-                      flexShrink: 0,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <button
-                      title="Editar"
-                      onClick={() => irParaEditar(a.atletaId)}
-                      aria-label={`Editar atleta ${a.nome} ${a.sobrenome}`}
-                      className="btn-icon btn-edit"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: 'inherit',
-                        padding: 4,
-                      }}
-                    >
-                      <FiEdit2 size={18} />
-                    </button>
-                    <button
-                      title="Deletar"
-                      onClick={() => deletarAtleta(a)}
-                      aria-label={`Deletar atleta ${a.nome} ${a.sobrenome}`}
-                      className="btn-icon btn-delete"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: 'inherit',
-                        padding: 4,
-                      }}
-                    >
-                      <FiTrash2 size={18} />
-                    </button>
-                    <button
-                      title="Estatísticas"
-                      onClick={() => toggleEstatisticas(a)}
-                      aria-label={`Mostrar estatísticas do atleta ${a.nome} ${a.sobrenome}`}
-                      className="btn-icon btn-stats"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: 'inherit',
-                        padding: 4,
-                      }}
-                    >
-                      <FiBarChart2 size={18} />
-                    </button>
-                    <button
-                      title="Transferir Atleta"
-                      onClick={() => toggleTransferirPanel(a.atletaId)}
-                      aria-label={`Transferir atleta ${a.nome} ${a.sobrenome}`}
-                      className="btn-icon btn-transfer"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: 'inherit',
-                        padding: 4,
-                      }}
-                    >
-                      <FiRepeat size={18} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Painel compacto de estatísticas */}
-                {estatisticaAberta === a.atletaId && (
-                  <div
-                    className="estatisticas-painel"
-                    style={{
-                      marginTop: 6,
-                      backgroundColor: 'var(--primaryPurple)',
-                      padding: '8px 12px',
-                      borderRadius: 6,
-                      maxHeight: 200,
-                      overflowY: 'auto',
-                      scrollbarWidth: 'none', // Firefox
-                      msOverflowStyle: 'none', // IE 10+
-                    }}
-                  >
-                    {/* Linha superior: Gols e Assistências */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: 20,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        flexWrap: 'nowrap',
-                        marginBottom: 12,
-                      }}
-                    >
-                      {/* Gols */}
-                      <div
-                        className="estatistica-item"
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          minWidth: 60,
-                        }}
-                      >
-                        <strong>Gols</strong>
-                        <span style={{ fontSize: 20, fontWeight: 'bold' }}>
-                          {dadosEstatistica[a.atletaId]?.gols ?? 0}
-                        </span>
-                        <div
-                          style={{
-                            display: 'flex',
-                            gap: 6,
-                            marginTop: 4,
-                          }}
-                        >
-                          <button
-                            onClick={() =>
-                              handleIncrementarEstatistica(a.atletaId, 'gols', 1)
-                            }
-                            aria-label="Adicionar gol"
-                            className="btn-icon"
-                            style={{
-                              border: '1px solid white',
-                              borderRadius: 4,
-                              padding: '2px 6px',
-                              color: 'white',
-                              backgroundColor: 'transparent',
-                              cursor: 'pointer',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <AiOutlinePlus size={14} />
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleIncrementarEstatistica(a.atletaId, 'gols', -1)
-                            }
-                            aria-label="Remover gol"
-                            className="btn-icon"
-                            style={{
-                              border: '1px solid white',
-                              borderRadius: 4,
-                              padding: '2px 6px',
-                              color: 'white',
-                              backgroundColor: 'transparent',
-                              cursor: 'pointer',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <AiOutlineMinus size={14} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Assistências */}
-                      <div
-                        className="estatistica-item"
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          minWidth: 60,
-                        }}
-                      >
-                        <strong>Assistências</strong>
-                        <span style={{ fontSize: 20, fontWeight: 'bold' }}>
-                          {dadosEstatistica[a.atletaId]?.assistencias ?? 0}
-                        </span>
-                        <div
-                          style={{
-                            display: 'flex',
-                            gap: 6,
-                            marginTop: 4,
-                          }}
-                        >
-                          <button
-                            onClick={() =>
-                              handleIncrementarEstatistica(a.atletaId, 'assistencias', 1)
-                            }
-                            aria-label="Adicionar assistência"
-                            className="btn-icon"
-                            style={{
-                              border: '1px solid white',
-                              borderRadius: 4,
-                              padding: '2px 6px',
-                              color: 'white',
-                              backgroundColor: 'transparent',
-                              cursor: 'pointer',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <AiOutlinePlus size={14} />
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleIncrementarEstatistica(a.atletaId, 'assistencias', -1)
-                            }
-                            aria-label="Remover assistência"
-                            className="btn-icon"
-                            style={{
-                              border: '1px solid white',
-                              borderRadius: 4,
-                              padding: '2px 6px',
-                              color: 'white',
-                              backgroundColor: 'transparent',
-                              cursor: 'pointer',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <AiOutlineMinus size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Linha inferior: Cartões Amarelos e Vermelhos */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: 20,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        flexWrap: 'nowrap',
-                      }}
-                    >
-                      {/* Cartões Amarelos */}
-                      <div
-                        className="estatistica-item"
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          minWidth: 60,
-                        }}
-                      >
-                        <strong>Cartão Amarelo</strong>
-                        <span style={{ fontSize: 20, fontWeight: 'bold' }}>
-                          {dadosEstatistica[a.atletaId]?.cartaoAmarelo ?? 0}
-                        </span>
-                        <div
-                          style={{
-                            display: 'flex',
-                            gap: 6,
-                            marginTop: 4,
-                          }}
-                        >
-                          <button
-                            onClick={() =>
-                              handleIncrementarEstatistica(a.atletaId, 'cartaoAmarelo', 1)
-                            }
-                            aria-label="Adicionar cartão amarelo"
-                            className="btn-icon"
-                            style={{
-                              border: '1px solid white',
-                              borderRadius: 4,
-                              padding: '2px 6px',
-                              color: 'white',
-                              backgroundColor: 'transparent',
-                              cursor: 'pointer',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <AiOutlinePlus size={14} />
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleIncrementarEstatistica(a.atletaId, 'cartaoAmarelo', -1)
-                            }
-                            aria-label="Remover cartão amarelo"
-                            className="btn-icon"
-                            style={{
-                              border: '1px solid white',
-                              borderRadius: 4,
-                              padding: '2px 6px',
-                              color: 'white',
-                              backgroundColor: 'transparent',
-                              cursor: 'pointer',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <AiOutlineMinus size={14} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Cartões Vermelhos */}
-                      <div
-                        className="estatistica-item"
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          minWidth: 60,
-                        }}
-                      >
-                        <strong>Cartão Vermelho</strong>
-                        <span style={{ fontSize: 20, fontWeight: 'bold' }}>
-                          {dadosEstatistica[a.atletaId]?.cartaoVermelho ?? 0}
-                        </span>
-                        <div
-                          style={{
-                            display: 'flex',
-                            gap: 6,
-                            marginTop: 4,
-                          }}
-                        >
-                          <button
-                            onClick={() =>
-                              handleIncrementarEstatistica(a.atletaId, 'cartaoVermelho', 1)
-                            }
-                            aria-label="Adicionar cartão vermelho"
-                            className="btn-icon"
-                            style={{
-                              border: '1px solid white',
-                              borderRadius: 4,
-                              padding: '2px 6px',
-                              color: 'white',
-                              backgroundColor: 'transparent',
-                              cursor: 'pointer',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <AiOutlinePlus size={14} />
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleIncrementarEstatistica(a.atletaId, 'cartaoVermelho', -1)
-                            }
-                            aria-label="Remover cartão vermelho"
-                            className="btn-icon"
-                            style={{
-                              border: '1px solid white',
-                              borderRadius: 4,
-                              padding: '2px 6px',
-                              color: 'white',
-                              backgroundColor: 'transparent',
-                              cursor: 'pointer',
-                              fontWeight: 'bold',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <AiOutlineMinus size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-
-                {/* Painel compacto de transferência */}
-                {atletaParaTransferirId === a.atletaId && (
-                  <div
-                    style={{
-                      marginTop: 6,
-                      backgroundColor: 'var(--primaryPurple)',
-                      padding: '8px 12px',
-                      borderRadius: 6,
-                      maxHeight: 140,
-                      overflowY: 'auto',
-                      scrollbarWidth: 'none', // Firefox
-                      msOverflowStyle: 'none', // IE 10+
-                    }}
-                  >
-                    <TransferirAtletaPanel
-                      atleta={a}
-                      onCancel={fecharTransferirPanel}
-                      onTransferenciaFeita={(msg, isErro) => {
-                        setMensagem(msg);
-                        setErro(isErro);
-                        if (!isErro) {
-                          buscarAtletas();
-                          fecharTransferirPanel();
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-              </li>
-            ))
-          ) : (
-            <li
-              style={{
-                color: 'white',
-                padding: '0.75rem',
-                textAlign: 'center',
-                fontSize: 16,
-              }}
-            >
-              Nenhum atleta encontrado.
-            </li>
-          )}
-        </ul>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -1,183 +1,173 @@
-// src/components/atleta/EditarAtleta.js
-import axios from 'axios';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft } from 'react-feather';
+import axios from 'axios';
+import { Save, ArrowLeft, User } from 'lucide-react';
+import Card from '../ui/Card';
+import Button from '../ui/Button';
+import { Input, Select } from '../ui/Input';
+import Badge from '../ui/Badge';
 
 export default function EditarAtleta() {
-  const [atleta, setAtleta] = useState(null);
+  const [atleta, setAtleta] = useState({
+    nome: '',
+    sobrenome: '',
+    posicao: '',
+    nacionalidade: '',
+    clubeId: ''
+  });
   const [posicoes, setPosicoes] = useState([]);
+  const [clubes, setClubes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState('');
   const [erro, setErro] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const id = queryParams.get('id');
-
-  // Função Capitalizer (igual ao cadastro em lote)
-  const capitalizarNome = (texto = '') => {
-    return texto
-      .toLowerCase()
-      .split(' ')
-      .filter(Boolean)
-      .map((palavra) => palavra.charAt(0).toUpperCase() + palavra.slice(1))
-      .join(' ');
-  };
+  const idAtleta = new URLSearchParams(location.search).get('id');
 
   useEffect(() => {
-    if (id) carregarDados(id);
-    carregarPosicoes();
-  }, [id]);
-
-  const carregarDados = async (id) => {
-    try {
-      const resposta = await axios.get(`http://localhost:8080/api/atleta/${id}`);
-      const data = resposta.data;
-
-      setAtleta({
-        atletaId: data.atletaId,
-        nome: data.nome || '',
-        sobrenome: data.sobrenome || '',
-        dataDeNascimento: data.dataDeNascimento?.substring(0, 10) || '',
-        nacionalidade: data.nacionalidade || '',
-        posicao: data.posicao || '',
-        clube: data.clubeNome || 'Não informado',
-      });
-    } catch (err) {
-      console.error('Erro ao carregar atleta:', err);
-      setMensagem('Erro ao carregar atleta.');
-      setErro(true);
+    if (!idAtleta) {
+      navigate('/menu-atleta/gerenciar');
+      return;
     }
-  };
 
-  const carregarPosicoes = async () => {
-    try {
-      const resposta = await axios.get('http://localhost:8080/api/enums/posicoes');
-      setPosicoes(resposta.data);
-    } catch (err) {
-      console.error('Erro ao carregar posições:', err);
+    async function carregarDados() {
+      setLoading(true);
+      try {
+        const [atletaRes, clubesRes, posicoesRes] = await Promise.all([
+          axios.get(`http://localhost:8080/api/atleta/${idAtleta}`),
+          axios.get('http://localhost:8080/api/clube'),
+          axios.get('http://localhost:8080/api/enums/posicoes')
+        ]);
+
+        setAtleta(atletaRes.data);
+        setClubes(Array.isArray(clubesRes.data) ? clubesRes.data : []);
+        
+        const formatadas = (Array.isArray(posicoesRes.data) ? posicoesRes.data : []).map((item) => {
+          if (typeof item === 'string') return { value: item, label: item };
+          const sigla = item.sigla || item.name || item.value || '';
+          const descricao = item.descricao || item.nome || item.label || '';
+          return { value: sigla, label: `[${sigla}] ${descricao}` };
+        });
+        setPosicoes(formatadas);
+      } catch (err) {
+        setMensagem('Erro ao carregar dados do atleta.');
+        setErro(true);
+      } finally {
+        setLoading(false);
+      }
     }
-  };
 
-  const atualizar = async (e) => {
+    carregarDados();
+  }, [idAtleta, navigate]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
+    setSalvando(true);
     try {
-      // Aplica formatação SOMENTE aqui, antes de enviar ao backend
-      const payload = {
-        nome: atleta.nome ? capitalizarNome(atleta.nome) : null,
-        sobrenome: atleta.sobrenome ? capitalizarNome(atleta.sobrenome) : null,
-        dataDeNascimento: atleta.dataDeNascimento || null,
-        nacionalidade: atleta.nacionalidade ? atleta.nacionalidade.toLowerCase() : null,
-        posicao: atleta.posicao || null,
-      };
-
-      await axios.put(`http://localhost:8080/api/atleta/atualizar/${id}`, payload);
-
+      await axios.put(`http://localhost:8080/api/atleta/atualizar/${idAtleta}`, atleta);
       setMensagem('Atleta atualizado com sucesso!');
       setErro(false);
-
-      setTimeout(() => navigate('/menu-atleta/gerenciar'), 1000);
+      setTimeout(() => navigate('/menu-atleta/gerenciar'), 1500);
     } catch (err) {
-      console.error(err);
       setMensagem('Erro ao atualizar atleta.');
       setErro(true);
+    } finally {
+      setSalvando(false);
     }
   };
 
-  if (!atleta) {
+  if (loading) {
     return (
-      <div className="text-center mt-10 text-white">
-        Carregando atleta...
+      <div className="flex justify-center py-24">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="form-background">
-      <div className="form-container">
-        <button
-          onClick={() => navigate('/menu-atleta/gerenciar')}
-          className="mb-4 flex items-center text-[var(--primaryGreen)] hover:text-[var(--lightGreen)]"
-          title="Voltar"
-        >
-          <ArrowLeft className="mr-2" /> Voltar para Gerenciar Atletas
-        </button>
-
-        <h2 className="form-title">Editar Atleta</h2>
-
-        <form onSubmit={atualizar}>
-          <input
-            type="text"
-            placeholder="Nome"
-            value={atleta.nome}
-            // NÃO formata durante a digitação — mantém o que o usuário digitar
-            onChange={(e) => setAtleta({ ...atleta, nome: e.target.value })}
-            className="form-input"
-          />
-
-          <input
-            type="text"
-            placeholder="Sobrenome"
-            value={atleta.sobrenome}
-            // NÃO formata durante a digitação — formatação ocorre no submit
-            onChange={(e) => setAtleta({ ...atleta, sobrenome: e.target.value })}
-            className="form-input"
-          />
-
-          <input
-            type="date"
-            value={atleta.dataDeNascimento}
-            onChange={(e) => setAtleta({ ...atleta, dataDeNascimento: e.target.value })}
-            className="form-input"
-          />
-
-          <input
-            type="text"
-            placeholder="Nacionalidade"
-            value={atleta.nacionalidade}
-            // NÃO altera enquanto digita; será transformada para minúsculas ao salvar
-            onChange={(e) => setAtleta({ ...atleta, nacionalidade: e.target.value })}
-            className="form-input"
-          />
-
-          <select
-            value={atleta.posicao}
-            onChange={(e) => setAtleta({ ...atleta, posicao: e.target.value })}
-            className="form-input"
-          >
-            <option value="">-- Selecione a Posição --</option>
-            {posicoes.map((p) => (
-              <option key={p.sigla} value={p.sigla}>
-                [{p.sigla}] {p.descricao}
-              </option>
-            ))}
-          </select>
-
+    <div className="max-w-4xl mx-auto space-y-8">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/menu-atleta/gerenciar')} className="rounded-full">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <div>
-            <label className="text-sm text-[var(--primaryPurple)] font-bold">
-              Clube Atual
-            </label>
-            <div className="form-input bg-gray-200 cursor-not-allowed text-gray-700 mt-1">
-              {atleta.clube}
+            <h2 className="text-3xl font-black text-white">Editar Atleta</h2>
+            <p className="text-brand-muted">Atualize as informações de {atleta.nome}.</p>
+          </div>
+        </div>
+      </div>
+
+      {mensagem && (
+        <div className={`p-4 rounded-lg animate-in slide-in-from-top duration-300 ${erro ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-brand-primary/10 text-brand-primary border border-brand-primary/20'}`}>
+          {mensagem}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <Card className="lg:col-span-1 flex flex-col items-center text-center py-10">
+          <div className="w-24 h-24 rounded-full bg-brand-border flex items-center justify-center text-3xl font-bold text-brand-primary border-4 border-brand-dark shadow-xl mb-4">
+            {atleta.nome?.charAt(0)}{atleta.sobrenome?.charAt(0)}
+          </div>
+          <h3 className="text-xl font-bold text-white">{atleta.nome} {atleta.sobrenome}</h3>
+          <p className="text-sm text-brand-muted mb-6">{atleta.clubeNome || 'Sem Clube'}</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Badge variant="neon">{atleta.posicao}</Badge>
+            <Badge>{atleta.nacionalidade}</Badge>
+          </div>
+        </Card>
+
+        <Card title="Informações Pessoais" className="lg:col-span-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Nome"
+                value={atleta.nome}
+                onChange={(e) => setAtleta({ ...atleta, nome: e.target.value })}
+              />
+              <Input
+                label="Sobrenome"
+                value={atleta.sobrenome}
+                onChange={(e) => setAtleta({ ...atleta, sobrenome: e.target.value })}
+              />
             </div>
-          </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select
+                label="Posição"
+                value={atleta.posicao}
+                onChange={(e) => setAtleta({ ...atleta, posicao: e.target.value })}
+                options={posicoes}
+              />
+              <Input
+                label="Nacionalidade"
+                value={atleta.nacionalidade}
+                onChange={(e) => setAtleta({ ...atleta, nacionalidade: e.target.value })}
+              />
+            </div>
 
-          <button type="submit" className="form-button mt-4">
-            Atualizar
-          </button>
-        </form>
+            <Select
+              label="Clube"
+              value={atleta.clubeId || ''}
+              onChange={(e) => setAtleta({ ...atleta, clubeId: e.target.value })}
+              options={[
+                { value: '', label: 'Sem Clube' },
+                ...clubes.map(c => ({ value: c.clubeId, label: c.nome }))
+              ]}
+            />
 
-        {mensagem && (
-          <div
-            className={`mt-4 text-center font-medium p-2 rounded ${
-              erro ? 'bg-red-500 text-white' : 'bg-green-600 text-white'
-            }`}
-          >
-            {mensagem}
-          </div>
-        )}
+            <div className="pt-4 border-t border-brand-border flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => navigate('/menu-atleta/gerenciar')} type="button">
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={salvando} className="gap-2">
+                <Save className="w-4 h-4" /> {salvando ? 'Salvando...' : 'Salvar Alterações'}
+              </Button>
+            </div>
+          </form>
+        </Card>
       </div>
     </div>
   );

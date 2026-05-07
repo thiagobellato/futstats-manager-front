@@ -1,7 +1,11 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useState, useEffect } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
-import BotaoVoltar from '../BotaoVoltar';
+import { Plus, Save, Trash2, Users, User } from 'lucide-react';
+import Card from '../ui/Card';
+import Button from '../ui/Button';
+import { Input, Select } from '../ui/Input';
+import Badge from '../ui/Badge';
 
 export default function CadastroAtletaEmLote() {
   const [nome, setNome] = useState('');
@@ -12,73 +16,36 @@ export default function CadastroAtletaEmLote() {
   const [mensagem, setMensagem] = useState('');
   const [erro, setErro] = useState(false);
   const [atletasParaCadastrar, setAtletasParaCadastrar] = useState([]);
-  const { fecharBarra } = useOutletContext();
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  const limparTudo = () => {
-    setNome('');
-    setPosicao('');
-    setClubeId('');
-    setAtletasParaCadastrar([]);
-    setMensagem('');
-    setErro(false);
-  };
-
-  const handleVoltar = () => {
-    limparTudo();
-    fecharBarra(null);
-    navigate('/');
-  };
-
   useEffect(() => {
-    let mounted = true;
-
-    async function carregarClubes() {
+    async function carregarDados() {
       try {
-        const resposta = await axios.get('http://localhost:8080/api/clube');
-        if (mounted) setClubes(resposta.data || []);
-      } catch (err) {
-        console.error('Erro ao carregar clubes:', err);
-        if (mounted) setClubes([]);
-      }
-    }
-
-    async function carregarPosicoes() {
-      try {
-        const resposta = await axios.get('http://localhost:8080/api/enums/posicoes');
-        const data = resposta.data || [];
-
-        const formatadas = data.map((item) => {
-          if (typeof item === 'string') {
-            const label = `[${item}] ${item.charAt(0).toUpperCase() + item.slice(1).toLowerCase()}`;
-            return { value: item, label };
-          }
-          if (item && typeof item === 'object') {
-            const sigla = item.sigla || item.name || item.value || '';
-            const nome = item.descricao || item.nome || item.label || '';
-            return { value: sigla, label: `[${sigla}] ${nome}` };
-          }
-          return { value: String(item), label: String(item) };
+        const [clubesRes, posicoesRes] = await Promise.all([
+          axios.get('http://localhost:8080/api/clube'),
+          axios.get('http://localhost:8080/api/enums/posicoes')
+        ]);
+        
+        setClubes(Array.isArray(clubesRes.data) ? clubesRes.data : []);
+        
+        const formatadas = (Array.isArray(posicoesRes.data) ? posicoesRes.data : []).map((item) => {
+          if (typeof item === 'string') return { value: item, label: item };
+          const sigla = item.sigla || item.name || item.value || '';
+          const descricao = item.descricao || item.nome || item.label || '';
+          return { value: sigla, label: `[${sigla}] ${descricao}` };
         });
-
-        if (mounted) setPosicoes(formatadas);
+        setPosicoes(formatadas);
       } catch (err) {
-        console.error('Erro ao carregar posições:', err);
-        if (mounted) setPosicoes([]);
+        console.error('Erro ao carregar dados:', err);
       }
     }
-
-    carregarClubes();
-    carregarPosicoes();
-
-    return () => {
-      mounted = false;
-    };
+    carregarDados();
   }, []);
 
-  // 🔤 Função Capitalizer para nomes de atletas
   const capitalizarNome = (texto) => {
+    if (!texto) return '';
     return texto
       .toLowerCase()
       .split(' ')
@@ -89,21 +56,13 @@ export default function CadastroAtletaEmLote() {
 
   const adicionarAtletaNaLista = (e) => {
     e.preventDefault();
-
-    if (!nome.trim()) {
-      setMensagem('O nome do atleta é obrigatório.');
-      setErro(true);
-      return;
-    }
-
-    if (!posicao) {
-      setMensagem('A posição do atleta é obrigatória.');
+    if (!nome.trim() || !posicao) {
+      setMensagem('Nome e posição são obrigatórios.');
       setErro(true);
       return;
     }
 
     const clubeSelecionado = clubes.find(c => c.clubeId === parseInt(clubeId));
-
     const novoAtleta = {
       nome: capitalizarNome(nome.trim()),
       posicao,
@@ -119,114 +78,131 @@ export default function CadastroAtletaEmLote() {
     setErro(false);
   };
 
-  const cadastrarTodos = async () => {
-    if (atletasParaCadastrar.length === 0) {
-      setMensagem('Adicione pelo menos um atleta antes de cadastrar.');
-      setErro(true);
-      return;
-    }
+  const removerDaLista = (index) => {
+    setAtletasParaCadastrar(prev => prev.filter((_, i) => i !== index));
+  };
 
+  const cadastrarTodos = async () => {
+    if (atletasParaCadastrar.length === 0) return;
+    setLoading(true);
     try {
       await axios.post('http://localhost:8080/api/atleta/adicionar-em-lote', atletasParaCadastrar);
-      setMensagem('Todos os atletas foram cadastrados com sucesso!');
+      setMensagem('Atletas cadastrados com sucesso! Redirecionando...');
       setErro(false);
-      limparTudo();
-
+      setAtletasParaCadastrar([]);
+      
+      // Delay menor para navegação
       setTimeout(() => {
-        navigate('/');
-      }, 1200);
+        navigate('/menu-atleta/gerenciar');
+      }, 1000);
     } catch (err) {
-      console.error(err);
-      setMensagem('Erro ao cadastrar os atletas.');
+      const msg = err.response?.data?.message || 'Erro ao cadastrar os atletas.';
+      setMensagem(msg);
       setErro(true);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="form-background min-h-screen flex items-center justify-center p-6">
-      <div className="form-container max-w-md w-full p-8 rounded-2xl shadow-lg bg-gradient-to-r from-primaryPurple to-primaryGreen text-white">
-        
-        <div className="flex items-center mb-6">
-          <BotaoVoltar onClick={handleVoltar} />
-          <h2 className="form-title">Cadastro de Atletas</h2>
+    <div className="max-w-5xl mx-auto space-y-8">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-3xl font-black text-white">Cadastrar Atletas</h2>
+          <p className="text-brand-muted mt-1">Gerencie a fila de atletas para cadastro em massa.</p>
         </div>
+        <Button variant="secondary" onClick={() => navigate('/menu-atleta/gerenciar')}>
+          Ver Todos os Atletas
+        </Button>
+      </div>
 
-        <form onSubmit={adicionarAtletaNaLista} className="flex flex-col">
-          <input
-            type="text"
-            placeholder="Nome do Atleta"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            className="form-input mb-4"
-            required
-          />
+      {mensagem && (
+        <div className={`p-4 rounded-lg animate-in slide-in-from-top duration-300 ${erro ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-brand-primary/10 text-brand-primary border border-brand-primary/20'}`}>
+          {mensagem}
+        </div>
+      )}
 
-          {/* 🔽 Campo de posição vindo do enum do back-end */}
-          <select
-            value={posicao}
-            onChange={(e) => setPosicao(e.target.value)}
-            className="form-input mb-4"
-            required
-          >
-            <option value="">-- Selecione a Posição --</option>
-            {posicoes.map((p, index) => (
-              <option key={index} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </select>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        {/* Form Card */}
+        <Card title="Novo Atleta" className="lg:col-span-2">
+          <form onSubmit={adicionarAtletaNaLista} className="space-y-4">
+            <Input
+              label="Nome Completo"
+              placeholder="Ex: Cristiano Ronaldo"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+            />
+            <Select
+              label="Posição"
+              value={posicao}
+              onChange={(e) => setPosicao(e.target.value)}
+              options={[{ value: '', label: 'Selecione a posição' }, ...posicoes]}
+            />
+            <Select
+              label="Clube (Opcional)"
+              value={clubeId}
+              onChange={(e) => setClubeId(e.target.value)}
+              options={[{ value: '', label: 'Sem Clube' }, ...clubes.map(c => ({ value: c.clubeId, label: c.nome }))]}
+            />
+            <Button type="submit" className="w-full mt-4 gap-2">
+              <Plus className="w-4 h-4" /> Adicionar à Fila
+            </Button>
+          </form>
+        </Card>
 
-          <select
-            value={clubeId}
-            onChange={(e) => setClubeId(e.target.value)}
-            className="form-input mb-6"
-          >
-            <option value="">-- Sem Clube --</option>
-            {clubes.map((clube) => (
-              <option key={clube.clubeId} value={clube.clubeId}>
-                {clube.nome}
-              </option>
-            ))}
-          </select>
-
-          <button
-            type="submit"
-            className="form-button w-full mb-6"
-          >
-            Adicionar à Lista
-          </button>
-        </form>
-
-        {atletasParaCadastrar.length > 0 && (
-          <section className="mb-6">
-            <h3 className="text-white font-semibold mb-3">Atletas na fila para cadastro:</h3>
-            <ul className="lista-clubes max-h-48 overflow-y-auto bg-primaryPurple p-3 rounded">
-              {atletasParaCadastrar.map((atleta, index) => (
-                <li key={index} className="item-clube">
-                  {atleta.nome} - {atleta.posicao} ({atleta.clubeNome})
-                </li>
-              ))}
-            </ul>
-            <button
-              onClick={cadastrarTodos}
-              className="form-button w-full mt-4"
-            >
-              Cadastrar Todos
-            </button>
-          </section>
-        )}
-
-        {mensagem && (
-          <div
-            className={`mt-4 text-center font-medium p-2 rounded ${
-              erro ? 'bg-red-500 text-white' : 'bg-green-600 text-white'
-            }`}
-            role="alert"
-            aria-live="polite"
-          >
-            {mensagem}
-          </div>
-        )}
+        {/* List Card */}
+        <Card 
+          title="Fila de Atletas" 
+          subtitle={`${atletasParaCadastrar.length} atletas prontos`}
+          className="lg:col-span-3"
+          headerAction={atletasParaCadastrar.length > 0 && (
+            <Button variant="ghost" size="sm" onClick={() => setAtletasParaCadastrar([])} className="text-red-500">
+              Limpar Tudo
+            </Button>
+          )}
+        >
+          {atletasParaCadastrar.length > 0 ? (
+            <div className="space-y-4">
+              <div className="space-y-2 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
+                {atletasParaCadastrar.map((atleta, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 bg-brand-dark rounded-xl border border-brand-border group hover:border-brand-primary/30 transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-brand-border flex items-center justify-center text-brand-primary font-bold">
+                        <User className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-white group-hover:text-brand-primary transition-colors">{atleta.nome}</p>
+                        <div className="flex gap-2 mt-1">
+                          <Badge variant="neon" className="py-0">{atleta.posicao}</Badge>
+                          <Badge className="py-0">{atleta.clubeNome}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => removerDaLista(index)}
+                      className="text-brand-muted hover:text-red-500 transition-colors p-2"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <Button 
+                onClick={cadastrarTodos} 
+                className="w-full mt-4 gap-2 h-14 text-lg font-black" 
+                disabled={loading}
+              >
+                {loading ? 'Processando...' : <><Save className="w-5 h-5" /> Finalizar Cadastro em Lote</>}
+              </Button>
+            </div>
+          ) : (
+            <div className="py-24 text-center border-2 border-dashed border-brand-border rounded-2xl">
+              <Users className="mx-auto text-6xl text-brand-muted mb-4 opacity-10" />
+              <p className="text-brand-muted font-medium">Sua fila de cadastro está vazia.</p>
+              <p className="text-brand-muted text-xs mt-1">Use o formulário ao lado para adicionar atletas.</p>
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );
