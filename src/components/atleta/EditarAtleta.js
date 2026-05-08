@@ -5,7 +5,9 @@ import { Save, ArrowLeft, User } from 'lucide-react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import { Input, Select } from '../ui/Input';
+import SearchableSelect from '../ui/SearchableSelect';
 import Badge from '../ui/Badge';
+import { nacionalidadesSelect } from '../../data/nacionalidades';
 
 export default function EditarAtleta() {
   const [atleta, setAtleta] = useState({
@@ -141,10 +143,12 @@ export default function EditarAtleta() {
                 onChange={(e) => setAtleta({ ...atleta, posicao: e.target.value })}
                 options={posicoes}
               />
-              <Input
+              <SearchableSelect
                 label="Nacionalidade"
                 value={atleta.nacionalidade}
                 onChange={(e) => setAtleta({ ...atleta, nacionalidade: e.target.value })}
+                options={nacionalidadesSelect}
+                placeholder="Buscar nacionalidade..."
               />
             </div>
 

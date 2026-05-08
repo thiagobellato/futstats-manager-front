@@ -5,7 +5,9 @@ import { Plus, Save, Trash2, Users, User } from 'lucide-react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import { Input, Select } from '../ui/Input';
+import SearchableSelect from '../ui/SearchableSelect';
 import Badge from '../ui/Badge';
+import { nacionalidadesSelect } from '../../data/nacionalidades';
 
 export default function CadastroAtletaEmLote() {
   const [nome, setNome] = useState('');
@@ -13,6 +15,7 @@ export default function CadastroAtletaEmLote() {
   const [posicoes, setPosicoes] = useState([]);
   const [clubeId, setClubeId] = useState('');
   const [clubes, setClubes] = useState([]);
+  const [nacionalidade, setNacionalidade] = useState('');
   const [mensagem, setMensagem] = useState('');
   const [erro, setErro] = useState(false);
   const [atletasParaCadastrar, setAtletasParaCadastrar] = useState([]);
@@ -66,6 +69,7 @@ export default function CadastroAtletaEmLote() {
     const novoAtleta = {
       nome: capitalizarNome(nome.trim()),
       posicao,
+      nacionalidade,
       clubeId: clubeId ? parseInt(clubeId) : null,
       clubeNome: clubeSelecionado?.nome || 'Sem Clube',
     };
@@ -73,6 +77,7 @@ export default function CadastroAtletaEmLote() {
     setAtletasParaCadastrar((prev) => [...prev, novoAtleta]);
     setNome('');
     setPosicao('');
+    setNacionalidade('');
     setClubeId('');
     setMensagem('');
     setErro(false);
@@ -138,6 +143,13 @@ export default function CadastroAtletaEmLote() {
               onChange={(e) => setPosicao(e.target.value)}
               options={[{ value: '', label: 'Selecione a posição' }, ...posicoes]}
             />
+            <SearchableSelect
+              label="Nacionalidade"
+              value={nacionalidade}
+              onChange={(e) => setNacionalidade(e.target.value)}
+              options={nacionalidadesSelect}
+              placeholder="Buscar nacionalidade..."
+            />
             <Select
               label="Clube (Opcional)"
               value={clubeId}
@@ -174,6 +186,7 @@ export default function CadastroAtletaEmLote() {
                         <p className="font-bold text-white group-hover:text-brand-primary transition-colors">{atleta.nome}</p>
                         <div className="flex gap-2 mt-1">
                           <Badge variant="neon" className="py-0">{atleta.posicao}</Badge>
+                          <Badge className="py-0">{atleta.nacionalidade || 'N/A'}</Badge>
                           <Badge className="py-0">{atleta.clubeNome}</Badge>
                         </div>
                       </div>

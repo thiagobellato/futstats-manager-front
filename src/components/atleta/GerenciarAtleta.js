@@ -6,7 +6,9 @@ import { Edit2, Trash2, BarChart2, Repeat, Filter, Plus, Minus, ChevronDown, Che
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import { Input, Select } from '../ui/Input';
+import SearchableSelect from '../ui/SearchableSelect';
 import Badge from '../ui/Badge';
+import { nacionalidadesSelect } from '../../data/nacionalidades';
 import Pagination from '../ui/Pagination';
 
 export default function GerenciarAtleta() {
@@ -252,14 +254,15 @@ export default function GerenciarAtleta() {
             value={filtroNome}
             onChange={(e) => setFiltroNome(e.target.value)}
           />
-          <Select
+          <SearchableSelect
             label="Nacionalidade"
             value={filtroNacionalidade}
             onChange={(e) => setFiltroNacionalidade(e.target.value)}
             options={[
-              { value: '', label: 'Todas' },
-              ...nacionalidadesUnicas.map(n => ({ value: n, label: n }))
+              { value: '', label: 'Todas', flag: '🌍' },
+              ...nacionalidadesSelect
             ]}
+            placeholder="Filtrar por país..."
           />
           <Select
             label="Posição"
