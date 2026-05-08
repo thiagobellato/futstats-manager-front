@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { TrendingUp, Award, ChevronDown, ChevronUp, Filter, Target, Zap, BarChart2 } from 'lucide-react';
@@ -6,6 +6,7 @@ import Card from '../ui/Card';
 import Button from '../ui/Button';
 import { Select } from '../ui/Input';
 import Badge from '../ui/Badge';
+import Pagination from '../ui/Pagination';
 
 export default function EstatisticasAtletas() {
   const [estatisticas, setEstatisticas] = useState([]);
@@ -16,11 +17,20 @@ export default function EstatisticasAtletas() {
   const [expandedAtleta, setExpandedAtleta] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Paginação
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const itensPorPagina = 50;
+
   const navigate = useNavigate();
 
   useEffect(() => {
     buscarDados();
   }, []);
+
+  // Resetar para página 1 ao mudar ordenação
+  useEffect(() => {
+    setPaginaAtual(1);
+  }, [ordenarPor]);
 
   const buscarDados = async () => {
     setLoading(true);
@@ -39,55 +49,73 @@ export default function EstatisticasAtletas() {
     }
   };
 
-  const clubeAtualPorId = atletas.reduce((acc, atleta) => {
-    if (!atleta) return acc;
-    const chave = `${atleta.atletaId}-${atleta.nome}`;
-    acc[chave] = atleta.clubeNome || 'Sem clube atual';
-    return acc;
-  }, {});
+  const clubeAtualPorId = useMemo(() => {
+    return atletas.reduce((acc, atleta) => {
+      if (!atleta) return acc;
+      const chave = `${atleta.atletaId}-${atleta.nome}`;
+      acc[chave] = atleta.clubeNome || 'Sem clube atual';
+      return acc;
+    }, {});
+  }, [atletas]);
 
-  const estatisticasPorAtleta = estatisticas.reduce((acc, stat) => {
-    if (!stat) return acc;
-    const chave = `${stat.atletaId}-${stat.nomeAtleta}`;
+  const estatisticasPorAtleta = useMemo(() => {
+    return estatisticas.reduce((acc, stat) => {
+      if (!stat) return acc;
+      const chave = `${stat.atletaId}-${stat.nomeAtleta}`;
 
-    if (!acc[chave]) {
-      acc[chave] = {
-        id: stat.atletaId,
-        nome: stat.nomeAtleta || 'Sem Nome',
-        gols: 0,
-        assistencias: 0,
-        cartaoAmarelo: 0,
-        cartaoVermelho: 0,
-        clube: clubeAtualPorId[chave] || stat.nomeClube || 'Sem clube',
-        historico: [],
-      };
-    }
+      if (!acc[chave]) {
+        acc[chave] = {
+          id: stat.atletaId,
+          nome: stat.nomeAtleta || 'Sem Nome',
+          gols: 0,
+          assistencias: 0,
+          cartaoAmarelo: 0,
+          cartaoVermelho: 0,
+          clube: clubeAtualPorId[chave] || stat.nomeClube || 'Sem clube',
+          historico: [],
+        };
+      }
 
-    acc[chave].gols += stat.gols || 0;
-    acc[chave].assistencias += stat.assistencias || 0;
-    acc[chave].cartaoAmarelo += stat.cartaoAmarelo || 0;
-    acc[chave].cartaoVermelho += stat.cartaoVermelho || 0;
+      acc[chave].gols += stat.gols || 0;
+      acc[chave].assistencias += stat.assistencias || 0;
+      acc[chave].cartaoAmarelo += stat.cartaoAmarelo || 0;
+      acc[chave].cartaoVermelho += stat.cartaoVermelho || 0;
 
-    acc[chave].historico.push({
-      clube: stat.nomeClube || 'Desconhecido',
-      gols: stat.gols || 0,
-      assistencias: stat.assistencias || 0,
-      cartaoAmarelo: stat.cartaoAmarelo || 0,
-      cartaoVermelho: stat.cartaoVermelho || 0,
+      acc[chave].historico.push({
+        clube: stat.nomeClube || 'Desconhecido',
+        gols: stat.gols || 0,
+        assistencias: stat.assistencias || 0,
+        cartaoAmarelo: stat.cartaoAmarelo || 0,
+        cartaoVermelho: stat.cartaoVermelho || 0,
+      });
+
+      return acc;
+    }, {});
+  }, [estatisticas, clubeAtualPorId]);
+
+  const atletasArray = useMemo(() => Object.values(estatisticasPorAtleta), [estatisticasPorAtleta]);
+
+  const atletasOrdenados = useMemo(() => {
+    return [...atletasArray].sort((a, b) => {
+      if (ordenarPor === 'nome') return (a.nome || '').localeCompare(b.nome || '');
+      return (b[ordenarPor] || 0) - (a[ordenarPor] || 0);
     });
+  }, [atletasArray, ordenarPor]);
 
-    return acc;
-  }, {});
+  const rankingGols = useMemo(() => [...atletasArray].sort((a, b) => b.gols - a.gols).slice(0, 3), [atletasArray]);
+  const rankingAssistencias = useMemo(() => [...atletasArray].sort((a, b) => b.assistencias - a.assistencias).slice(0, 3), [atletasArray]);
 
-  const atletasArray = Object.values(estatisticasPorAtleta);
+  // Aplicar Paginação
+  const totalPaginas = Math.ceil(atletasOrdenados.length / itensPorPagina);
+  const atletasPaginados = useMemo(() => {
+    const inicio = (paginaAtual - 1) * itensPorPagina;
+    return atletasOrdenados.slice(inicio, inicio + itensPorPagina);
+  }, [atletasOrdenados, paginaAtual, itensPorPagina]);
 
-  const atletasOrdenados = [...atletasArray].sort((a, b) => {
-    if (ordenarPor === 'nome') return (a.nome || '').localeCompare(b.nome || '');
-    return (b[ordenarPor] || 0) - (a[ordenarPor] || 0);
-  });
-
-  const rankingGols = [...atletasArray].sort((a, b) => b.gols - a.gols).slice(0, 3);
-  const rankingAssistencias = [...atletasArray].sort((a, b) => b.assistencias - a.assistencias).slice(0, 3);
+  const totals = useMemo(() => ({
+    gols: atletasArray.reduce((acc, curr) => acc + curr.gols, 0),
+    assistencias: atletasArray.reduce((acc, curr) => acc + curr.assistencias, 0)
+  }), [atletasArray]);
 
   const toggleExpandir = (chave) => {
     setExpandedAtleta(expandedAtleta === chave ? null : chave);
@@ -171,23 +199,25 @@ export default function EstatisticasAtletas() {
                 { value: 'gols', label: 'Mais Gols' },
                 { value: 'assistencias', label: 'Mais Assistências' },
                 { value: 'nome', label: 'Ordem Alfabética' },
+                { value: 'cartaoAmarelo', label: 'Mais Cartões Amarelos' },
+                { value: 'cartaoVermelho', label: 'Mais Cartões Vermelhos' },
               ]}
             />
           </div>
           <div className="flex gap-4">
             <div className="text-center px-4">
               <p className="text-[10px] text-brand-muted uppercase font-bold tracking-tighter">Total Gols</p>
-              <p className="text-xl font-black text-white">{atletasArray.reduce((acc, curr) => acc + curr.gols, 0)}</p>
+              <p className="text-xl font-black text-white">{totals.gols}</p>
             </div>
             <div className="text-center px-4 border-l border-brand-border">
               <p className="text-[10px] text-brand-muted uppercase font-bold tracking-tighter">Total Assist.</p>
-              <p className="text-xl font-black text-white">{atletasArray.reduce((acc, curr) => acc + curr.assistencias, 0)}</p>
+              <p className="text-xl font-black text-white">{totals.assistencias}</p>
             </div>
           </div>
         </div>
 
         <div className="space-y-4">
-          {atletasOrdenados.map((e) => {
+          {atletasPaginados.map((e) => {
             const chave = `${e.id}-${e.nome}`;
             const isExpanded = expandedAtleta === chave;
             return (
@@ -273,6 +303,12 @@ export default function EstatisticasAtletas() {
             );
           })}
         </div>
+        
+        <Pagination 
+          currentPage={paginaAtual} 
+          totalPages={totalPaginas} 
+          onPageChange={setPaginaAtual} 
+        />
       </Card>
     </div>
   );
