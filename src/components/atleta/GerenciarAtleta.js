@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import TransferirAtletaPanel from './TransferirAtletaPanel';
@@ -12,35 +12,64 @@ import { nacionalidadesSelect } from '../../data/nacionalidades';
 import Pagination from '../ui/Pagination';
 
 export default function GerenciarAtleta() {
+  // Carregar estado salvo do sessionStorage
+  const savedState = useMemo(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('futstats_atleta_filtros') || '{}');
+    } catch (e) {
+      return {};
+    }
+  }, []);
+
   const [atletas, setAtletas] = useState([]);
   const [posicoes, setPosicoes] = useState([]);
   const [mensagem, setMensagem] = useState('');
   const [erro, setErro] = useState(false);
   const [estatisticaAberta, setEstatisticaAberta] = useState(null);
   const [dadosEstatistica, setDadosEstatistica] = useState({});
-  const [ordenarAsc, setOrdenarAsc] = useState(true);
-  const [ordenarPorPosicao, setOrdenarPorPosicao] = useState(false);
-  const [ordenarPosicaoAsc, setOrdenarPosicaoAsc] = useState(true);
-  const [filtroNome, setFiltroNome] = useState('');
-  const [filtroNacionalidade, setFiltroNacionalidade] = useState('');
-  const [filtroPosicao, setFiltroPosicao] = useState('');
-  const [filtroClube, setFiltroClube] = useState('');
+  const [ordenarAsc, setOrdenarAsc] = useState(savedState.ordenarAsc ?? true);
+  const [ordenarPorPosicao, setOrdenarPorPosicao] = useState(savedState.ordenarPorPosicao ?? false);
+  const [ordenarPosicaoAsc, setOrdenarPosicaoAsc] = useState(savedState.ordenarPosicaoAsc ?? true);
+  const [filtroNome, setFiltroNome] = useState(savedState.filtroNome ?? '');
+  const [filtroNacionalidade, setFiltroNacionalidade] = useState(savedState.filtroNacionalidade ?? '');
+  const [filtroPosicao, setFiltroPosicao] = useState(savedState.filtroPosicao ?? '');
+  const [filtroClube, setFiltroClube] = useState(savedState.filtroClube ?? '');
   const [atletaParaTransferirId, setAtletaParaTransferirId] = useState(null);
   const [loading, setLoading] = useState(true);
   
   // Paginação
-  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [paginaAtual, setPaginaAtual] = useState(savedState.paginaAtual ?? 1);
   const itensPorPagina = 50;
 
+  const isInitialMount = useRef(true);
   const navigate = useNavigate();
+
+  // Salvar estado no sessionStorage sempre que mudar
+  useEffect(() => {
+    const stateToSave = {
+      ordenarAsc,
+      ordenarPorPosicao,
+      ordenarPosicaoAsc,
+      filtroNome,
+      filtroNacionalidade,
+      filtroPosicao,
+      filtroClube,
+      paginaAtual
+    };
+    sessionStorage.setItem('futstats_atleta_filtros', JSON.stringify(stateToSave));
+  }, [ordenarAsc, ordenarPorPosicao, ordenarPosicaoAsc, filtroNome, filtroNacionalidade, filtroPosicao, filtroClube, paginaAtual]);
 
   useEffect(() => {
     buscarAtletas();
     buscarPosicoes();
   }, []);
 
-  // Resetar para página 1 ao filtrar
+  // Resetar para página 1 ao filtrar (exceto no mount inicial se houver estado salvo)
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     setPaginaAtual(1);
   }, [filtroNome, filtroNacionalidade, filtroPosicao, filtroClube]);
 
@@ -189,6 +218,15 @@ export default function GerenciarAtleta() {
     if (!isErro) buscarAtletas();
   };
 
+  const limparFiltros = () => {
+    setFiltroNome('');
+    setFiltroNacionalidade('');
+    setFiltroPosicao('');
+    setFiltroClube('');
+    setPaginaAtual(1);
+    sessionStorage.removeItem('futstats_atleta_filtros');
+  };
+
   const nacionalidadesUnicas = useMemo(() => [...new Set(atletas.map((a) => a.nacionalidade).filter(Boolean))], [atletas]);
   const clubesUnicos = useMemo(() => [...new Set(atletas.map((a) => a.clubeNome).filter(Boolean))], [atletas]);
 
@@ -301,7 +339,7 @@ export default function GerenciarAtleta() {
           >
             Posição {ordenarPorPosicao && (ordenarPosicaoAsc ? '↑' : '↓')}
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => { setFiltroNome(''); setFiltroNacionalidade(''); setFiltroPosicao(''); setFiltroClube(''); }} className="ml-auto text-brand-muted">
+          <Button variant="ghost" size="sm" onClick={limparFiltros} className="ml-auto text-brand-muted">
             Limpar Filtros
           </Button>
         </div>
